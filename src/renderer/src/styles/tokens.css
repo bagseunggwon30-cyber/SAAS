@@ -1,0 +1,35 @@
+:root {
+  --color-stone-050: #f5f4ee;
+  --color-stone-100: #ebe8dc;
+  --color-stone-200: #d8d1bf;
+  --color-stone-300: #b9af96;
+  --color-ink-900: #1b231f;
+  --color-ink-700: #415049;
+  --color-ink-500: #61726a;
+  --color-ink-300: #90a096;
+  --color-moss-700: #2d5a43;
+  --color-moss-500: #4b8664;
+  --color-amber-500: #d58b2a;
+  --color-red-500: #ba4d45;
+  --color-blue-500: #3b6e91;
+  --surface-canvas: var(--color-stone-050);
+  --surface-panel: rgba(255, 255, 255, 0.78);
+  --surface-panel-strong: #fcfbf7;
+  --surface-accent: #e1ece6;
+  --line-soft: rgba(27, 35, 31, 0.08);
+  --line-strong: rgba(27, 35, 31, 0.16);
+  --text-strong: var(--color-ink-900);
+  --text-base: var(--color-ink-700);
+  --text-muted: var(--color-ink-500);
+  --accent-primary: var(--color-moss-700);
+  --accent-secondary: var(--color-blue-500);
+  --accent-warning: var(--color-amber-500);
+  --accent-danger: var(--color-red-500);
+  --shadow-panel: 0 18px 40px rgba(56, 70, 61, 0.12);
+  --radius-xl: 28px;
+  --radius-lg: 20px;
+  --radius-md: 14px;
+  --radius-sm: 10px;
+  --font-sans: "IBM Plex Sans KR", "Segoe UI", sans-serif;
+  --font-mono: "JetBrains Mono", "Consolas", monospace;
+}
