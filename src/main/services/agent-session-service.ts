@@ -77,7 +77,8 @@ export class AgentSessionService {
   private readonly runtimes = new Map<string, SessionRuntime>();
 
   constructor(
-    private readonly db: Pick<DatabaseClient, "getSettings" | "setSetting"> & Partial<Pick<DatabaseClient, "writeAudit">>,
+    private readonly db: Pick<DatabaseClient, "getSettings" | "getCaptureSession" | "setSetting"> &
+      Partial<Pick<DatabaseClient, "writeAudit">>,
     private readonly captureService: CaptureSurface,
     private readonly tutorOrchestrator: TutorSurface,
     private readonly actionPlanner: ActionPlannerService = new ActionPlannerService(),
@@ -308,12 +309,7 @@ export class AgentSessionService {
 
   private async runTurn(input: AgentSessionMessageRequest): Promise<AgentSessionSnapshot> {
     const sessionId = input.sessionId ?? this.currentSession?.id ?? crypto.randomUUID();
-    const capture = input.captureId ? null : await this.capture(input.bindingId);
-    const liveCapture =
-      capture ??
-      (input.captureId
-        ? await this.capture(input.bindingId)
-        : null);
+    const liveCapture = input.captureId ? this.db.getCaptureSession(input.captureId) : await this.capture(input.bindingId);
     const captureId = input.captureId ?? liveCapture?.id;
     const tutorPanel = await this.tutorOrchestrator.refresh({
       flow: input.flow,

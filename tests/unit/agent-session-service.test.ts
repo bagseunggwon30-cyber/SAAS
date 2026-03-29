@@ -119,15 +119,17 @@ describe("AgentSessionService", () => {
   it("keeps tracked window context when an existing capture id is reused", async () => {
     const db = {
       getSettings: vi.fn(() => []),
+      getCaptureSession: vi.fn(() => capture),
       setSetting: vi.fn(),
+    };
+    const captureService = {
+      captureBinding: vi.fn(async () => capture),
+      captureCurrent: vi.fn(async () => capture),
     };
     const execute = vi.fn(async () => undefined);
     const service = new AgentSessionService(
       db as never,
-      {
-        captureBinding: vi.fn(async () => capture),
-        captureCurrent: vi.fn(async () => capture),
-      } as never,
+      captureService as never,
       {
         refresh: vi.fn(async () => tutorPanel),
       } as never,
@@ -147,6 +149,9 @@ describe("AgentSessionService", () => {
     const action = session.currentTurn?.proposedActions.find((item) => item.type === "hotkey");
 
     expect(action).toBeTruthy();
+    expect(db.getCaptureSession).toHaveBeenCalledWith(capture.id);
+    expect(captureService.captureBinding).not.toHaveBeenCalled();
+    expect(captureService.captureCurrent).not.toHaveBeenCalled();
 
     service.approveAction({
       sessionId: session.id,

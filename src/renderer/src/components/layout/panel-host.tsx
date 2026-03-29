@@ -50,7 +50,7 @@ export const PanelHost = ({
           </button>
         </header>
 
-        <section className="agent-panel__card">
+        <section className="agent-panel__card" data-agent-section="capabilities">
           <div className="agent-panel__card-header">
             <h2>{agentCopy.capabilityTitle}</h2>
             <StatusBadge tone={sessionView?.tone ?? "neutral"}>{sessionView?.statusLabel ?? "대기"}</StatusBadge>
@@ -62,7 +62,7 @@ export const PanelHost = ({
           </ul>
         </section>
 
-        <section className="agent-panel__card">
+        <section className="agent-panel__card" data-agent-section="quick-start">
           <div className="agent-panel__card-header">
             <h2>{agentCopy.quickStartTitle}</h2>
             <span className="agent-panel__muted">{agentCopy.quickStartHint}</span>
@@ -94,7 +94,7 @@ export const PanelHost = ({
           </div>
         </section>
 
-        <section className="agent-panel__card">
+        <section className="agent-panel__card" data-agent-section="problem">
           <div className="agent-panel__card-header">
             <h2>{agentCopy.problemTitle}</h2>
             <span className="agent-panel__muted">{agentCopy.problemHint}</span>
@@ -115,7 +115,7 @@ export const PanelHost = ({
           </div>
         </section>
 
-        <section className="agent-panel__card">
+        <section className="agent-panel__card" data-agent-section="status">
           <div className="agent-panel__card-header">
             <h2>{agentCopy.statusTitle}</h2>
             <span className="agent-panel__muted">{agentCopy.statusHint}</span>
@@ -129,7 +129,7 @@ export const PanelHost = ({
           </div>
         </section>
 
-        <section className="agent-panel__card">
+        <section className="agent-panel__card" data-agent-section="approval">
           <div className="agent-panel__card-header">
             <h2>{agentCopy.approvalTitle}</h2>
             {actionPreview ? (
@@ -178,7 +178,7 @@ export const PanelHost = ({
           {approvalError ? <p className="agent-panel__feedback agent-panel__feedback--error">{approvalError}</p> : null}
         </section>
 
-        <section className="agent-panel__card">
+        <section className="agent-panel__card" data-agent-section="evidence">
           <div className="agent-panel__card-header">
             <h2>{agentCopy.evidenceTitle}</h2>
             <span className="agent-panel__muted">{agentCopy.evidenceHint}</span>

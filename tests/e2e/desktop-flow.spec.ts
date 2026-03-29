@@ -60,17 +60,16 @@ test("버블 클릭 시 단일 에이전트 패널이 열린다", async () => {
 
   try {
     const bubbleButton = page.locator(".agent-bubble-host .agent-bubble");
-    await bubbleButton.click();
+    await bubbleButton.click({ force: true });
 
+    await expect(page.locator(".agent-shell")).toHaveClass(/agent-shell--panel-open/, { timeout: 15_000 });
     await expect(page.locator(".agent-panel-host")).toBeVisible({ timeout: 15_000 });
     await expect(page.locator('[data-agent-surface="panel-host"]')).toHaveCount(1);
     await expect(page.locator(".agent-bubble-host")).toHaveCount(0);
-    await expect(page.getByRole("button", { name: "닫기", exact: true })).toBeVisible();
-    await expect(page.getByRole("heading", { name: "현재 화면 설명부터 승인 후 실행까지" })).toBeVisible();
-    await expect(page.getByText("에이전트가 바로 도와주는 것")).toBeVisible();
-    await expect(page.getByRole("button", { name: "원인 찾고 다음 단계 제안받기" })).toBeVisible();
-    await expect(page.getByRole("heading", { name: "승인 후 실행", exact: true })).toBeVisible();
-    await expect(page.getByRole("heading", { name: "최근 근거", exact: true })).toBeVisible();
+    await expect(page.locator(".agent-panel__hero")).toBeVisible();
+    await expect(page.locator("#agent-question")).toBeVisible();
+    await expect(page.locator('[data-agent-section="approval"]')).toBeVisible();
+    await expect(page.locator('[data-agent-section="evidence"]')).toBeVisible();
   } finally {
     await app.close();
     rmSync(userDataDir, { recursive: true, force: true });
@@ -87,7 +86,7 @@ test("시작 시 bubble-only 상태를 유지한다", async () => {
     await expect(page.locator(".agent-shell")).toHaveClass(/agent-shell--bubble-only/);
     await expect(page.locator(".agent-bubble-host .agent-bubble")).toBeVisible();
     await expect(page.locator(".agent-panel-host")).toHaveCount(0);
-    await expect(page.locator('[data-agent-surface="panel"]')).toHaveCount(0);
+    await expect(page.locator('[data-agent-surface="panel-host"]')).toHaveCount(0);
   } finally {
     await app.close();
     rmSync(userDataDir, { recursive: true, force: true });

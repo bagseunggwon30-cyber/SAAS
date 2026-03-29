@@ -22,10 +22,10 @@ export const AgentBubble = ({
         className={clsx("agent-bubble", tone && `agent-bubble--${tone}`)}
         onMouseDown={(event) => {
           event.preventDefault();
-          toggle();
         }}
         onClick={(event) => {
           event.preventDefault();
+          toggle();
         }}
         onKeyDown={(event) => {
           if (event.key === "Enter" || event.key === " ") {

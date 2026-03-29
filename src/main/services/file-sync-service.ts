@@ -13,12 +13,22 @@ const toRegex = (pattern: string) => {
   return new RegExp(`^${escaped}$`, "i");
 };
 
-const listFilesRecursively = (rootPath: string): string[] => {
-  const entries = readdirSync(rootPath, { withFileTypes: true });
+const listFilesRecursively = (
+  rootPath: string,
+  onError?: (path: string, errorValue: unknown) => void,
+): string[] => {
+  let entries;
+  try {
+    entries = readdirSync(rootPath, { withFileTypes: true });
+  } catch (errorValue) {
+    onError?.(rootPath, errorValue);
+    return [];
+  }
+
   return entries.flatMap((entry) => {
     const fullPath = join(rootPath, entry.name);
     if (entry.isDirectory()) {
-      return listFilesRecursively(fullPath);
+      return listFilesRecursively(fullPath, onError);
     }
     return [fullPath];
   });
@@ -115,7 +125,21 @@ export class FileSyncService {
       return;
     }
 
-    const files = listFilesRecursively(config.rootPath).filter((filePath) =>
+    const files = listFilesRecursively(config.rootPath, (path, errorValue) => {
+      const message = errorValue instanceof Error ? errorValue.message : "Unknown sync scan error.";
+      this.db.createSyncJob({
+        jobType: "project-snapshot",
+        filePath: path,
+        fileName: basename(path),
+        status: "error",
+        message,
+      });
+      this.db.writeAudit("sync.scan.error", {
+        rootPath: config.rootPath,
+        filePath: path,
+        message,
+      });
+    }).filter((filePath) =>
       config.filePatterns.some((pattern) => toRegex(pattern).test(basename(filePath))),
     );
 
