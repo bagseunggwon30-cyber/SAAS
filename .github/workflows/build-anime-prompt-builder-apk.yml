@@ -36,8 +36,19 @@ jobs:
 
       - name: Verify APK exists
         run: |
-          test -s android-anime-prompt-builder/app/build/outputs/apk/release/app-release.apk
-          ls -lh android-anime-prompt-builder/app/build/outputs/apk/release/app-release.apk
+          APK=android-anime-prompt-builder/app/build/outputs/apk/release/app-release.apk
+          test -s "$APK"
+          ls -lh "$APK"
+
+      - name: Verify APK signature and package
+        run: |
+          APK=android-anime-prompt-builder/app/build/outputs/apk/release/app-release.apk
+          APKSIGNER=$(find "$ANDROID_HOME/build-tools" -type f -name apksigner | sort -V | tail -n 1)
+          AAPT=$(find "$ANDROID_HOME/build-tools" -type f -name aapt | sort -V | tail -n 1)
+          test -x "$APKSIGNER"
+          test -x "$AAPT"
+          "$APKSIGNER" verify --verbose --print-certs "$APK"
+          "$AAPT" dump badging "$APK" | head -n 12
 
       - name: Rename APK
         run: cp android-anime-prompt-builder/app/build/outputs/apk/release/app-release.apk AnimePromptBuilder.apk
