@@ -3,11 +3,11 @@ plugins {
 }
 
 android {
-    namespace 'com.openai.animepromptbuilder'
+    namespace 'app.animepromptbuilder.mobile'
     compileSdk 35
 
     defaultConfig {
-        applicationId 'com.openai.animepromptbuilder'
+        applicationId 'app.animepromptbuilder.mobile'
         minSdk 26
         targetSdk 35
         versionCode 1
