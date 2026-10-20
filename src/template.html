@@ -1,0 +1,1228 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>PLC 장비·단자대 보관함</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@600;700&family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans+KR:wght@400;500;600;700&display=swap">
+<script>
+/* 첫 페인트 전에 저장된 테마·모션 설정을 적용 (깜빡임 방지) */
+(function () {
+  var d = document.documentElement, t = null, m = null;
+  try { t = localStorage.getItem('plc.theme'); m = localStorage.getItem('plc.motion'); } catch (e) {}
+  if (t === 'light' || t === 'dark') d.setAttribute('data-theme', t);
+  var reduce = false;
+  try { reduce = matchMedia('(prefers-reduced-motion: reduce)').matches; } catch (e) {}
+  d.setAttribute('data-motion', m === 'on' || m === 'off' ? m : (reduce ? 'off' : 'on'));
+})();
+</script>
+<style>
+/* 레이아웃: 상단 고정 바(탭·토글) 아래에 장비 도감 · 노란 마커 단자 스트립 · 사진 보관 · 편집 표.
+   색: 판넬 회색 바탕 + 마커 노랑(단자 마킹 플레이트) + 컨트롤 파랑. 접지선(녹/황) 줄무늬를 진행 표시에 사용. */
+:root {
+  --bg: #E6E9EE; --bg-2: #D8DCE3; --surface: #FFFFFF; --surface-2: #F3F5F8;
+  --ink: #131822; --ink-2: #465163; --ink-3: #66748A;
+  --line: #C9D0DB; --line-2: #E2E6ED;
+  --marker: #F6D31C; --on-marker: #15130A;
+  --ctrl: #2447D1; --ctrl-soft: #E4EAFF; --on-ctrl: #FFFFFF;
+  --ok: #17803F; --ok-soft: #DCF2E4; --warn: #9A5A00; --warn-soft: #FFEBC8; --bad: #BC3328; --bad-soft: #FBE0DD;
+  --pe-g: #2C9A4A; --pe-y: #F6D31C;
+  --k-pwr: #D4472A; --k-gnd: #2C9A4A; --k-motor: #2447D1; --k-brake: #B86F00;
+  --k-io: #0E8587; --k-comm: #7446D1; --k-sig: #5B6678; --k-ac: #8A5638;
+  --shadow: 0 1px 2px rgba(19,24,34,.06), 0 8px 22px -10px rgba(19,24,34,.22);
+  --font-ui: 'IBM Plex Sans KR', 'Malgun Gothic', 'Apple SD Gothic Neo', 'Noto Sans KR', system-ui, sans-serif;
+  --font-disp: 'Barlow Condensed', 'IBM Plex Sans KR', 'Malgun Gothic', sans-serif;
+  --font-mono: 'IBM Plex Mono', ui-monospace, 'Cascadia Mono', Consolas, monospace;
+  --ease: cubic-bezier(.2,.7,.2,1); --spring: cubic-bezier(.34,1.56,.64,1);
+  color-scheme: light;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #0E1217; --bg-2: #161B22; --surface: #171C24; --surface-2: #1E242E;
+    --ink: #E9EDF3; --ink-2: #AAB4C3; --ink-3: #8793A5;
+    --line: #2C3542; --line-2: #232B36;
+    --ctrl: #8AA4FF; --ctrl-soft: #1B2547; --on-ctrl: #0B1230;
+    --ok: #4CC37A; --ok-soft: #15321F; --warn: #F0B04A; --warn-soft: #3A2A0C; --bad: #FF8074; --bad-soft: #3B1A17;
+    --k-pwr: #FF8467; --k-gnd: #5CCB7B; --k-motor: #8AA4FF; --k-brake: #F0B04A;
+    --k-io: #4FD1D3; --k-comm: #B596FF; --k-sig: #9BA6B8; --k-ac: #D69A74;
+    --shadow: 0 1px 2px rgba(0,0,0,.4), 0 10px 26px -12px rgba(0,0,0,.7);
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #0E1217; --bg-2: #161B22; --surface: #171C24; --surface-2: #1E242E;
+  --ink: #E9EDF3; --ink-2: #AAB4C3; --ink-3: #8793A5;
+  --line: #2C3542; --line-2: #232B36;
+  --ctrl: #8AA4FF; --ctrl-soft: #1B2547; --on-ctrl: #0B1230;
+  --ok: #4CC37A; --ok-soft: #15321F; --warn: #F0B04A; --warn-soft: #3A2A0C; --bad: #FF8074; --bad-soft: #3B1A17;
+  --k-pwr: #FF8467; --k-gnd: #5CCB7B; --k-motor: #8AA4FF; --k-brake: #F0B04A;
+  --k-io: #4FD1D3; --k-comm: #B596FF; --k-sig: #9BA6B8; --k-ac: #D69A74;
+  --shadow: 0 1px 2px rgba(0,0,0,.4), 0 10px 26px -12px rgba(0,0,0,.7);
+  color-scheme: dark;
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+html { scroll-padding-top: 150px; -webkit-text-size-adjust: 100%; }
+body { font: 400 14px/1.55 var(--font-ui); background: var(--bg); color: var(--ink); min-height: 100vh; }
+img { max-width: 100%; display: block; }
+button, input, select, textarea { font: inherit; color: inherit; }
+button { cursor: pointer; }
+[hidden] { display: none !important; }
+:focus-visible { outline: 2px solid var(--ctrl); outline-offset: 2px; border-radius: 6px; }
+::selection { background: var(--marker); color: var(--on-marker); }
+.sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+.wrap { max-width: 1360px; margin: 0 auto; padding-inline: max(16px, env(safe-area-inset-left, 0px)) max(16px, env(safe-area-inset-right, 0px)); }
+.mono { font-family: var(--font-mono); }
+.grow { flex: 1; }
+
+/* ── 상단 바 ─────────────────────────────── */
+.bar { position: sticky; top: 0; z-index: 30; background: color-mix(in srgb, var(--bg) 84%, transparent); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px); border-bottom: 1px solid var(--line); }
+.bar-in { display: flex; flex-wrap: wrap; align-items: center; gap: 10px 18px; padding-block: 10px; }
+.brand { display: flex; align-items: center; gap: 11px; min-width: 0; }
+.brand svg { flex: none; }
+.brand h1 { font: 700 17px/1.15 var(--font-ui); letter-spacing: -.01em; }
+.brand p { font-size: 12px; color: var(--ink-3); }
+.tabs-wrap { flex: 1 1 360px; min-width: 0; display: flex; }
+.tabs, .seg { position: relative; display: inline-flex; gap: 2px; padding: 4px; background: var(--bg-2); border-radius: 12px; }
+.tabs { max-width: 100%; overflow-x: auto; scrollbar-width: none; }
+.tabs::-webkit-scrollbar { display: none; }
+.tab, .seg button { position: relative; z-index: 1; border: 0; background: none; padding: 7px 13px; border-radius: 9px; font-weight: 600; font-size: 13px; color: var(--ink-2); white-space: nowrap; transition: color .2s; }
+.tab:hover, .seg button:hover { color: var(--ink); }
+.tab[aria-selected="true"], .seg button[aria-checked="true"] { color: var(--ink); }
+.tab .n { margin-left: 6px; font: 500 11px var(--font-mono); color: var(--ink-3); }
+.thumb { position: absolute; z-index: 0; top: 4px; bottom: 4px; left: 0; width: 0; background: var(--surface); border-radius: 9px; box-shadow: 0 1px 2px rgba(0,0,0,.12), 0 2px 8px -2px rgba(0,0,0,.14); transition: transform .38s var(--ease), width .38s var(--ease); }
+.tools { display: flex; align-items: center; gap: 12px; margin-left: auto; position: relative; }
+
+.switch { display: inline-flex; align-items: center; gap: 8px; border: 0; background: none; padding: 2px 0; color: var(--ink-2); font-weight: 500; font-size: 13px; text-align: left; }
+.switch .track { flex: none; position: relative; width: 38px; height: 22px; border-radius: 99px; background: var(--line); transition: background .25s; }
+.switch .track::after { content: ''; position: absolute; top: 3px; left: 3px; width: 16px; height: 16px; border-radius: 50%; background: #fff; box-shadow: 0 1px 3px rgba(0,0,0,.35); transition: transform .32s var(--spring); }
+.switch[aria-checked="true"] .track { background: var(--ctrl); }
+.switch[aria-checked="true"] .track::after { transform: translateX(16px); }
+.switch:active .track::after { width: 20px; }
+.switch[aria-checked="true"]:active .track::after { transform: translateX(12px); }
+
+.btn { display: inline-flex; align-items: center; justify-content: center; gap: 6px; padding: 8px 13px; border-radius: 10px; border: 1px solid var(--line); background: var(--surface); color: var(--ink); font-weight: 600; font-size: 13px; line-height: 1.2; transition: transform .15s var(--ease), background .2s, border-color .2s, box-shadow .2s; }
+.btn:hover { border-color: var(--ink-3); }
+.btn:active { transform: translateY(1px) scale(.98); }
+.btn-primary { background: var(--ctrl); border-color: var(--ctrl); color: var(--on-ctrl); }
+.btn-primary:hover { border-color: var(--ctrl); filter: brightness(1.08); }
+.btn-marker { background: var(--marker); border-color: transparent; color: var(--on-marker); }
+.btn-ghost { background: transparent; }
+.btn-danger { color: var(--bad); background: var(--bad-soft); border-color: transparent; }
+.btn-danger[data-armed="1"] { background: var(--bad); color: #fff; }
+.btn-sm { padding: 5px 9px; font-size: 12px; border-radius: 8px; }
+.caret { width: 8px; height: 8px; border-right: 2px solid currentColor; border-bottom: 2px solid currentColor; transform: rotate(45deg) translateY(-2px); transition: transform .3s var(--ease); }
+.btn[aria-expanded="true"] .caret { transform: rotate(-135deg) translateY(-2px); }
+
+.pop { position: absolute; right: 0; top: calc(100% + 8px); min-width: 260px; background: var(--surface); border: 1px solid var(--line); border-radius: 14px; box-shadow: var(--shadow); padding: 6px; z-index: 40; opacity: 0; transform: translateY(-6px) scale(.96); transform-origin: top right; pointer-events: none; transition: opacity .2s, transform .3s var(--spring); }
+.pop.open { opacity: 1; transform: none; pointer-events: auto; }
+.pop button { display: flex; width: 100%; text-align: left; gap: 10px; align-items: flex-start; padding: 10px 12px; border: 0; background: none; border-radius: 9px; font-weight: 600; font-size: 13px; }
+.pop button small { display: block; font-weight: 400; color: var(--ink-3); font-size: 12px; margin-top: 1px; }
+.pop button:hover { background: var(--surface-2); }
+
+/* ── 저장 상태 ────────────────────────────── */
+.status { display: flex; align-items: center; flex-wrap: wrap; gap: 6px 14px; padding-block: 12px 4px; font-size: 12.5px; color: var(--ink-2); }
+.dot { width: 8px; height: 8px; border-radius: 50%; background: var(--ok); box-shadow: 0 0 0 0 color-mix(in srgb, var(--ok) 50%, transparent); animation: pulse 2.4s infinite; }
+.dot.bad { background: var(--bad); animation: none; }
+.meter { width: 120px; height: 8px; border-radius: 99px; background: var(--bg-2); overflow: hidden; }
+.meter i { display: block; height: 100%; width: 0; border-radius: inherit; background: repeating-linear-gradient(135deg, var(--pe-g) 0 7px, var(--pe-y) 7px 14px); background-size: 40px 40px; transition: width .7s var(--ease); animation: stripes 2.4s linear infinite; }
+
+/* ── 패널 공통 ───────────────────────────── */
+main { padding-block: 14px 56px; }
+.panel { animation: panelIn .45s var(--ease) backwards; }
+.panel-head { display: flex; flex-wrap: wrap; align-items: flex-end; justify-content: space-between; gap: 8px 18px; margin-bottom: 14px; }
+.panel-head h2 { font: 700 22px/1.2 var(--font-ui); letter-spacing: -.015em; }
+.panel-head p { color: var(--ink-3); font-size: 13px; max-width: 62ch; }
+.toolbar { display: flex; flex-wrap: wrap; align-items: center; gap: 10px 14px; margin-bottom: 12px; }
+.search { position: relative; flex: 1 1 240px; max-width: 420px; }
+.search input { width: 100%; padding: 9px 12px 9px 34px; border-radius: 10px; border: 1px solid var(--line); background: var(--surface); transition: border-color .2s, box-shadow .2s; }
+.search input:focus { outline: none; border-color: var(--ctrl); box-shadow: 0 0 0 3px var(--ctrl-soft); }
+.search::before { content: ''; position: absolute; left: 12px; top: 50%; width: 11px; height: 11px; margin-top: -7px; border: 2px solid var(--ink-3); border-radius: 50%; }
+.search::after { content: ''; position: absolute; left: 22px; top: 50%; width: 6px; height: 2px; margin-top: 4px; background: var(--ink-3); transform: rotate(45deg); }
+.chips-row { display: flex; flex-wrap: wrap; gap: 7px; margin-bottom: 8px; }
+.chip { display: inline-flex; align-items: center; gap: 7px; padding: 6px 12px; border-radius: 99px; border: 1px solid var(--line); background: var(--surface); font-weight: 500; font-size: 13px; color: var(--ink-2); transition: transform .2s var(--spring), background .2s, border-color .2s, color .2s; }
+.chip:hover { border-color: var(--ink-3); }
+.chip:active { transform: scale(.94); }
+.chip[aria-pressed="true"] { background: var(--ink); border-color: var(--ink); color: var(--bg); }
+.chip .c { font: 500 11px var(--font-mono); opacity: .7; }
+.chip .sw { width: 9px; height: 9px; border-radius: 2px; background: var(--k, var(--ink-3)); }
+.legend-note { display: flex; flex-wrap: wrap; gap: 6px 16px; font-size: 12px; color: var(--ink-3); margin-bottom: 14px; }
+.count { font: 500 12.5px var(--font-mono); color: var(--ink-3); }
+
+/* ── 장비 카드 ───────────────────────────── */
+.grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 300px), 1fr)); gap: 16px; align-items: start; }
+.card { background: var(--surface); border: 1px solid var(--line); border-radius: 14px; overflow: hidden; display: flex; flex-direction: column; box-shadow: var(--shadow); animation: rise .5s var(--ease) backwards; animation-delay: calc(min(var(--i, 0), 14) * 30ms); transition: transform .28s var(--ease), border-color .2s; min-width: 0; }
+.card:hover { transform: translateY(-3px); border-color: var(--ink-3); }
+.card.flash { animation: flash 1.6s var(--ease); }
+.media { position: relative; aspect-ratio: 4 / 3; background: var(--bg-2); overflow: hidden; cursor: zoom-in; flex: none; }
+.media img { width: 100%; height: 100%; object-fit: cover; transition: transform .7s var(--ease); }
+.card:hover .media img { transform: scale(1.06); }
+.media.noimg { display: grid; place-items: center; font: 700 28px var(--font-disp); color: var(--ink-3); }
+.badge { position: absolute; top: 9px; padding: 3px 9px; border-radius: 99px; font-size: 11.5px; font-weight: 600; backdrop-filter: blur(6px); }
+.badge.cat { left: 9px; background: rgba(10,12,16,.72); color: #fff; }
+.badge.conf { right: 9px; }
+.badge.ok { background: var(--ok-soft); color: var(--ok); }
+.badge.est { background: var(--warn-soft); color: var(--warn); }
+.badge.unk { background: var(--bad-soft); color: var(--bad); }
+.srcseg { position: absolute; left: 9px; bottom: 9px; display: inline-flex; padding: 3px; border-radius: 99px; background: rgba(10,12,16,.72); gap: 2px; }
+.srcseg button { border: 0; background: none; color: #fff; padding: 3px 10px; border-radius: 99px; font-size: 11.5px; font-weight: 600; opacity: .7; }
+.srcseg button[aria-pressed="true"] { background: var(--marker); color: var(--on-marker); opacity: 1; }
+.cbody { padding: 13px 14px 12px; display: flex; flex-direction: column; gap: 5px; min-width: 0; }
+.maker { font-size: 11.5px; font-weight: 600; letter-spacing: .06em; text-transform: uppercase; color: var(--ink-3); }
+.model { font: 700 27px/1.05 var(--font-disp); letter-spacing: .01em; overflow-wrap: anywhere; }
+.cname { color: var(--ink-2); font-size: 13px; text-wrap: balance; }
+.cuse { font-size: 13px; color: var(--ink); margin-top: 2px; }
+.tchips { list-style: none; display: flex; flex-wrap: wrap; gap: 5px; margin-top: 6px; }
+.t { max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font: 500 11.5px var(--font-mono); padding: 2px 7px; border-radius: 6px; background: var(--surface-2); border: 1px solid var(--line-2); color: var(--ink-2); }
+.t.more { color: var(--ink-3); }
+.exp { margin-top: 8px; display: inline-flex; align-items: center; justify-content: space-between; width: 100%; padding: 8px 10px; border-radius: 9px; border: 1px solid var(--line); background: var(--surface-2); font-weight: 600; font-size: 12.5px; color: var(--ink-2); transition: background .2s; }
+.exp:hover { background: var(--bg-2); }
+.exp .caret { transition: transform .35s var(--ease); }
+.card.open .exp .caret { transform: rotate(-135deg) translateY(-2px); }
+.detail { display: grid; grid-template-rows: 0fr; transition: grid-template-rows .42s var(--ease); }
+.detail > .in { overflow: hidden; min-height: 0; }
+.card.open .detail { grid-template-rows: 1fr; }
+.dpad { padding-top: 12px; display: grid; gap: 12px; }
+.dl { display: grid; gap: 9px; }
+.dl > div { display: grid; grid-template-columns: 76px 1fr; gap: 10px; font-size: 13px; }
+.dl dt { color: var(--ink-3); font-size: 12px; padding-top: 1px; }
+.dl dd { min-width: 0; overflow-wrap: anywhere; }
+.dl ul { padding-left: 16px; }
+.ttable { width: 100%; border-collapse: collapse; font-size: 12.5px; }
+.ttable th { text-align: left; font-size: 11.5px; color: var(--ink-3); font-weight: 600; padding: 4px 8px 4px 0; }
+.ttable td { padding: 6px 8px 6px 0; border-top: 1px solid var(--line-2); vertical-align: top; }
+.ttable td:first-child { font: 500 12px var(--font-mono); white-space: normal; width: 42%; overflow-wrap: anywhere; }
+.phrow { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; font-size: 12px; color: var(--ink-3); }
+.pill { border: 1px solid var(--line); background: var(--surface); border-radius: 99px; padding: 2px 10px; font: 500 12px var(--font-mono); color: var(--ink-2); transition: background .2s, transform .2s var(--spring); }
+.pill:hover { background: var(--marker); color: var(--on-marker); border-color: transparent; transform: translateY(-1px); }
+.ev { font-size: 12px; color: var(--ink-3); border-left: 3px solid var(--marker); padding-left: 9px; }
+.prod { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; padding-top: 10px; border-top: 1px dashed var(--line); }
+.prod .k { font-size: 12px; color: var(--ink-3); width: 100%; }
+.prod input[type="url"] { flex: 1 1 140px; min-width: 0; padding: 5px 9px; font-size: 12px; border: 1px solid var(--line); border-radius: 8px; background: var(--surface); }
+.grid.is-list { grid-template-columns: 1fr; }
+.is-list .card { flex-direction: row; }
+.is-list .media { width: 210px; aspect-ratio: 4 / 3; align-self: flex-start; }
+.is-list .cbody { flex: 1; }
+.is-list .model { font-size: 24px; }
+@media (max-width: 640px) { .is-list .card { flex-direction: column; } .is-list .media { width: 100%; } }
+.empty { grid-column: 1 / -1; text-align: center; padding: 42px 16px; color: var(--ink-3); }
+.src { margin-top: 28px; padding: 14px 16px; background: var(--surface); border: 1px solid var(--line); border-radius: 12px; font-size: 12.5px; color: var(--ink-2); }
+.src h3 { font-size: 13px; margin-bottom: 6px; }
+.src ul { padding-left: 18px; display: grid; gap: 2px; }
+.src a { color: var(--ctrl); }
+
+/* ── 단자대 스트립 ───────────────────────── */
+.strips { display: grid; gap: 16px; }
+.strip { background: var(--surface); border: 1px solid var(--line); border-radius: 14px; box-shadow: var(--shadow); animation: rise .5s var(--ease) backwards; animation-delay: calc(var(--i, 0) * 60ms); }
+.strip-h { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 12px; padding: 12px 16px; border-bottom: 1px solid var(--line-2); }
+.strip-id { font: 700 20px var(--font-disp); letter-spacing: .04em; padding: 1px 10px; background: var(--marker); color: var(--on-marker); border-radius: 4px; }
+.strip-h h3 { font-size: 15px; }
+.strip-h p { flex-basis: 100%; font-size: 12.5px; color: var(--ink-3); }
+.mkgrid { display: grid; grid-template-columns: repeat(auto-fill, minmax(78px, 1fr)); gap: 6px; padding: 14px 16px 6px; }
+.mk { --k: var(--k-sig); position: relative; display: flex; flex-direction: column; align-items: center; gap: 0; padding: 4px 4px 9px; border: 0; border-radius: 3px; background: var(--marker); color: var(--on-marker); font: 600 12.5px var(--font-mono); box-shadow: inset 0 -5px 0 var(--k); transition: transform .2s var(--spring), opacity .3s, filter .3s, outline-color .2s; outline: 2px solid transparent; }
+.mk .no { font-size: 9.5px; font-weight: 500; opacity: .55; }
+.mk:hover { transform: translateY(-3px); }
+.mk.unwired { background: repeating-linear-gradient(135deg, var(--marker) 0 6px, color-mix(in srgb, var(--marker) 55%, var(--surface)) 6px 12px); }
+.mk.unwired::after { content: ''; position: absolute; top: 4px; right: 4px; width: 6px; height: 6px; border: 1.5px solid var(--on-marker); border-radius: 50%; opacity: .55; }
+.mk.dim { opacity: .16; filter: grayscale(1); }
+.mk.hit { outline-color: var(--ctrl); transform: translateY(-3px); }
+.mk.sel { outline-color: var(--ink); }
+.tinfo { margin: 8px 16px 14px; padding: 10px 12px; border-radius: 10px; background: var(--surface-2); font-size: 12.5px; color: var(--ink-2); min-height: 44px; transition: background .2s; }
+.tinfo b { font-family: var(--font-mono); color: var(--ink); }
+.tinfo .kd { display: inline-block; font-size: 11px; font-weight: 600; padding: 1px 8px; border-radius: 99px; margin: 0 6px; color: #fff; background: var(--k, var(--k-sig)); }
+:root[data-theme="dark"] .tinfo .kd { color: #0B0E12; }
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) .tinfo .kd { color: #0B0E12; } }
+.k-pwr { --k: var(--k-pwr); } .k-gnd { --k: var(--k-gnd); } .k-motor { --k: var(--k-motor); } .k-brake { --k: var(--k-brake); }
+.k-io { --k: var(--k-io); } .k-comm { --k: var(--k-comm); } .k-sig { --k: var(--k-sig); } .k-ac { --k: var(--k-ac); }
+
+/* ── 사진 보관 ───────────────────────────── */
+.dz { border: 2px dashed var(--ctrl); background: var(--ctrl-soft); border-radius: 14px; padding: 20px 16px; text-align: center; cursor: pointer; margin-bottom: 16px; transition: background .2s, transform .3s var(--spring); }
+.dz:hover, .dz.dragover { transform: scale(1.01); background: color-mix(in srgb, var(--ctrl) 18%, var(--surface)); }
+.dz h3 { font-size: 15px; color: var(--ctrl); margin-bottom: 4px; }
+.dz p { font-size: 12.5px; color: var(--ink-2); }
+.photo-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 260px), 1fr)); gap: 16px; align-items: start; }
+.pcard { background: var(--surface); border: 1px solid var(--line); border-radius: 14px; overflow: hidden; box-shadow: var(--shadow); animation: rise .5s var(--ease) backwards; animation-delay: calc(min(var(--i, 0), 12) * 30ms); min-width: 0; }
+.pcard-top { display: flex; align-items: center; justify-content: space-between; padding: 7px 10px 7px 13px; background: var(--ink); color: var(--bg); font-weight: 700; font-size: 13px; }
+.pcard-top .btn-danger { background: transparent; color: #FF9A8F; }
+.pcard-top .btn-danger[data-armed="1"] { background: var(--bad); color: #fff; }
+.thumbw { height: 190px; overflow: hidden; cursor: zoom-in; background: var(--bg-2); }
+.thumbw img { width: 100%; height: 100%; object-fit: cover; transition: transform .6s var(--ease); }
+.thumbw:hover img { transform: scale(1.05); }
+.pbody { padding: 11px; display: grid; gap: 7px; }
+.pbody input, .pbody textarea, .addform input, .addform select { width: 100%; padding: 7px 10px; border: 1px solid var(--line); border-radius: 8px; background: var(--surface); font-size: 13px; }
+.pbody textarea { resize: vertical; min-height: 54px; }
+.pbody input:focus, .pbody textarea:focus, .addform input:focus, .addform select:focus { outline: none; border-color: var(--ctrl); box-shadow: 0 0 0 3px var(--ctrl-soft); }
+.eqrow { display: flex; flex-wrap: wrap; gap: 5px; }
+
+/* ── 일람표 ──────────────────────────────── */
+.addform { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 8px; padding: 12px; background: var(--surface); border: 1px solid var(--line); border-radius: 12px; margin-bottom: 14px; }
+.tablewrap { overflow-x: auto; background: var(--surface); border: 1px solid var(--line); border-radius: 12px; }
+table.tt { width: 100%; border-collapse: collapse; font-size: 13px; }
+.tt th, .tt td { padding: 8px 12px; border-bottom: 1px solid var(--line-2); text-align: left; white-space: nowrap; }
+.tt th { background: var(--surface-2); font-size: 12px; color: var(--ink-3); font-weight: 600; position: sticky; top: 0; }
+.tt tr { transition: background .2s; }
+.tt tbody tr:hover { background: var(--surface-2); }
+.tt tbody tr { animation: rowIn .4s var(--ease) backwards; animation-delay: calc(min(var(--i, 0), 20) * 14ms); }
+.tt input.cell { border: 1px solid transparent; background: transparent; padding: 4px 6px; border-radius: 6px; min-width: 70px; width: 100%; }
+.tt input.cell:hover { border-color: var(--line); }
+.tt input.cell:focus { outline: none; border-color: var(--ctrl); background: var(--surface); }
+.type { font: 600 11.5px var(--font-mono); padding: 2px 8px; border-radius: 6px; background: var(--surface-2); border: 1px solid var(--line-2); }
+
+/* ── 모달·토스트 ─────────────────────────── */
+.modal { position: fixed; inset: 0; z-index: 60; display: grid; place-items: center; padding: 16px; background: rgba(8,10,14,.88); opacity: 0; pointer-events: none; transition: opacity .25s; }
+.modal.open { opacity: 1; pointer-events: auto; }
+.fig { display: grid; gap: 10px; justify-items: center; max-width: 96vw; transform: scale(.94); transition: transform .4s var(--spring); }
+.modal.open .fig { transform: none; }
+.fig img { max-width: 94vw; max-height: 76vh; border-radius: 10px; background: #fff; object-fit: contain; }
+.fig-cap { color: #fff; font-weight: 600; text-align: center; font-size: 14px; }
+.fig .eqrow { justify-content: center; }
+.mbtn { position: absolute; border: 0; width: 44px; height: 44px; border-radius: 50%; background: rgba(255,255,255,.14); color: #fff; font-size: 22px; line-height: 1; transition: background .2s, transform .2s var(--spring); }
+.mbtn:hover { background: rgba(255,255,255,.3); transform: scale(1.08); }
+.mbtn.close { top: max(16px, env(safe-area-inset-top, 0px)); right: max(16px, env(safe-area-inset-right, 0px)); }
+.mbtn.prev { left: max(12px, env(safe-area-inset-left, 0px)); top: 50%; margin-top: -22px; }
+.mbtn.next { right: max(12px, env(safe-area-inset-right, 0px)); top: 50%; margin-top: -22px; }
+.toast { position: fixed; left: 50%; bottom: max(24px, env(safe-area-inset-bottom, 0px)); z-index: 70; transform: translate(-50%, 24px); opacity: 0; pointer-events: none; background: var(--ink); color: var(--bg); padding: 10px 16px; border-radius: 12px; font-weight: 600; font-size: 13px; transition: transform .4s var(--spring), opacity .25s; max-width: calc(100vw - 32px); }
+.toast.show { transform: translate(-50%, 0); opacity: 1; }
+
+/* ── 모션 ────────────────────────────────── */
+@keyframes rise { from { opacity: 0; transform: translateY(16px) scale(.985); } }
+@keyframes rowIn { from { opacity: 0; transform: translateX(-8px); } }
+@keyframes panelIn { from { opacity: 0; transform: translateY(8px); } }
+@keyframes pulse { 0% { box-shadow: 0 0 0 0 color-mix(in srgb, var(--ok) 55%, transparent); } 70%, 100% { box-shadow: 0 0 0 8px transparent; } }
+@keyframes stripes { to { background-position: 40px 0; } }
+@keyframes flash { 0%, 100% { box-shadow: var(--shadow); } 25%, 65% { box-shadow: 0 0 0 3px var(--marker), 0 14px 30px -10px rgba(0,0,0,.35); } }
+html[data-motion="off"] *, html[data-motion="off"] *::before, html[data-motion="off"] *::after { animation: none !important; transition: none !important; scroll-behavior: auto !important; }
+
+@media (max-width: 760px) {
+  .bar { transition: transform .32s var(--ease); }
+  .bar.away { transform: translateY(-100%); }
+  .bar-in { gap: 8px 12px; padding-block: 8px; }
+  .brand p, .hide-s, #motionSw span:last-child { display: none; }
+  .tabs-wrap { order: 3; flex-basis: 100%; }
+  .tools { margin-left: auto; gap: 8px; flex-wrap: nowrap; }
+  .seg button { padding: 6px 9px; }
+  .panel-head h2 { font-size: 20px; }
+  html { scroll-padding-top: 20px; }
+}
+@media print {
+  .bar, .status, .toolbar, .chips-row, .dz, .addform, .exp, .prod, .toast, .modal { display: none !important; }
+  .detail { grid-template-rows: 1fr !important; }
+  .card, .pcard, .strip { box-shadow: none; animation: none; break-inside: avoid; }
+  body { background: #fff; }
+}
+</style>
+</head>
+<body>
+
+<header class="bar">
+  <div class="wrap bar-in">
+    <div class="brand">
+      <svg width="38" height="38" viewBox="0 0 38 38" aria-hidden="true">
+        <rect x="1" y="1" width="36" height="36" rx="9" fill="var(--ink)"/>
+        <rect x="5" y="23" width="28" height="4" rx="1" fill="var(--ink-3)"/>
+        <rect x="7" y="9" width="6" height="14" rx="1.5" fill="var(--marker)"/><rect x="15" y="9" width="6" height="14" rx="1.5" fill="var(--marker)"/><rect x="23" y="9" width="6" height="14" rx="1.5" fill="var(--marker)"/>
+        <rect x="7" y="20" width="6" height="3" fill="var(--pe-g)"/><rect x="15" y="20" width="6" height="3" fill="var(--k-motor)"/><rect x="23" y="20" width="6" height="3" fill="var(--k-pwr)"/>
+      </svg>
+      <div>
+        <h1>PLC 장비·단자대 보관함</h1>
+        <p>제어반 현장 사진 판독 노트</p>
+      </div>
+    </div>
+
+    <div class="tabs-wrap">
+      <nav class="tabs" role="tablist" aria-label="화면" id="tabs">
+        <span class="thumb" aria-hidden="true"></span>
+        <button class="tab" role="tab" id="t-catalog" data-tab="catalog" aria-controls="p-catalog">장비 도감<span class="n" id="nCatalog"></span></button>
+        <button class="tab" role="tab" id="t-strips" data-tab="strips" aria-controls="p-strips">단자대<span class="n" id="nStrips"></span></button>
+        <button class="tab" role="tab" id="t-photos" data-tab="photos" aria-controls="p-photos">현장 사진<span class="n" id="nPhotos"></span></button>
+        <button class="tab" role="tab" id="t-table" data-tab="table" aria-controls="p-table">단자 일람표<span class="n" id="nTable"></span></button>
+      </nav>
+    </div>
+
+    <div class="tools">
+      <div class="seg" role="radiogroup" aria-label="테마" id="themeSeg">
+        <span class="thumb" aria-hidden="true"></span>
+        <button role="radio" data-v="system" aria-checked="false">시스템</button>
+        <button role="radio" data-v="light" aria-checked="false">라이트</button>
+        <button role="radio" data-v="dark" aria-checked="false">다크</button>
+      </div>
+      <button class="switch" role="switch" id="motionSw" aria-checked="true" aria-label="모션"><span class="track"></span><span>모션</span></button>
+      <button class="btn" id="saveBtn" aria-haspopup="true" aria-expanded="false">보관<span class="hide-s">·내보내기</span><span class="caret"></span></button>
+      <div class="pop" id="savePop" role="menu">
+        <button role="menuitem" id="actCsv">단자 일람표 CSV<small>엑셀에서 바로 열리는 UTF-8 파일</small></button>
+        <button role="menuitem" id="actEmbed">사진 내장 HTML로 영구 저장<small>현재 사진·표·제품 사진을 파일 하나로 묶어 내려받기</small></button>
+        <button role="menuitem" id="actPrint">인쇄<small>현재 화면을 인쇄용으로 출력</small></button>
+      </div>
+    </div>
+  </div>
+</header>
+
+<div class="wrap">
+  <div class="status" role="status">
+    <span class="dot" id="stDot"></span>
+    <span id="storageStatusText">저장소 연결 중…</span>
+    <span class="grow"></span>
+    <span id="photoCounterBadge" class="mono"></span>
+    <span class="meter" aria-hidden="true"><i id="meterFill"></i></span>
+  </div>
+</div>
+
+<main class="wrap">
+
+  <!-- 장비 도감 -->
+  <section class="panel" id="p-catalog" role="tabpanel" aria-labelledby="t-catalog" hidden>
+    <div class="panel-head">
+      <div>
+        <h2>장비 도감</h2>
+        <p>첨부한 현장 사진 19장에서 확인한 장비의 종류·제품명·단자번호·쓰임새입니다. 라벨에서 직접 읽은 항목과 모양·배선으로 추정한 항목을 구분해 표시합니다.</p>
+      </div>
+      <span class="count" id="catCount" aria-live="polite"></span>
+    </div>
+    <div class="toolbar">
+      <label class="search"><span class="sr-only">장비 검색</span><input type="search" id="catSearch" placeholder="모델·선번·용도 검색 (예: MC-9b, P24, 인버터)" autocomplete="off"></label>
+      <div class="seg" role="radiogroup" aria-label="보기 방식" id="viewSeg">
+        <span class="thumb" aria-hidden="true"></span>
+        <button role="radio" data-v="card" aria-checked="true">카드</button>
+        <button role="radio" data-v="list" aria-checked="false">목록</button>
+      </div>
+      <button class="switch" role="switch" id="swOk" aria-checked="false"><span class="track"></span><span>라벨 확인 항목만</span></button>
+      <button class="switch" role="switch" id="swOpen" aria-checked="false"><span class="track"></span><span>상세 모두 펼치기</span></button>
+    </div>
+    <div class="chips-row" id="catChips" aria-label="분류 필터"></div>
+    <div class="legend-note">
+      <span><b class="mono">라벨 확인</b> 사진에서 모델명·정격을 직접 읽음</span>
+      <span><b class="mono">추정</b> 모양·배선·위치로 판단</span>
+      <span><b class="mono">미식별</b> 라벨이 없어 단정 불가</span>
+    </div>
+    <div class="grid" id="catGrid"></div>
+
+    <div class="src">
+      <h3>사양 참고 자료 (검색 결과 요약 기준, 원문 페이지는 열람하지 못함)</h3>
+      <ul>
+        <li><a href="https://cdn.automationdirect.com/static/specs/cutsheet/XBE-DC32A_cutsheet.pdf" target="_blank" rel="noopener">XBE-DC32A cut sheet</a> · <a href="https://cdn.automationdirect.com/static/specs/cutsheet/XBE-TN32A_cutsheet.pdf" target="_blank" rel="noopener">XBE-TN32A</a> · <a href="https://cdn.automationdirect.com/static/specs/cutsheet/XBL-C41A_cutsheet.pdf" target="_blank" rel="noopener">XBL-C41A</a> · <a href="https://cdn.automationdirect.com/static/specs/cutsheet/XEM-DN32H2_cutsheet.pdf" target="_blank" rel="noopener">XEM-DN32H2 (XBM-DN32H2와 동일 계열로 표기됨)</a></li>
+        <li><a href="https://baoanjsc.com.vn/products/plc-modular-type-unit-ls-XBM-DN32H2_495957_en.aspx" target="_blank" rel="noopener">XBM-DN32H2 (유통사 상품 페이지)</a></li>
+        <li><a href="https://www.ip-systemes.com/media/5057/0733-catalogue-metasol-mc-contacteurs-departs-moteurs-ls-electric.pdf" target="_blank" rel="noopener">LS Metasol MC 카탈로그</a> · <a href="https://etinco.vn/wp-content/uploads/catalogue-ls-meta-mec-mccb-elcb.pdf" target="_blank" rel="noopener">LS Meta-MEC MCCB/ELCB 카탈로그</a></li>
+        <li><a href="https://uk.rs-online.com/web/p/switching-power-supplies/1065846" target="_blank" rel="noopener">Mean Well LRS-100-24</a> · <a href="https://wolfautomation.com/ice-cube-relay-3a-4pdt-24vdc-input-led" target="_blank" rel="noopener">Kacon HR705-4PL</a> · <a href="https://baoanjsc.com.vn/products/miniature-circuit-breakers-ls-LA63H-4P-C10A_851406_en.aspx" target="_blank" rel="noopener">LS LA63H C10 (LA63Hd 접미사 "d"는 미확인)</a> · <a href="https://plc-direct.com/en-se/products/ciprga70c4075abaa" target="_blank" rel="noopener">Yaskawa GA700 30/37kW</a></li>
+      </ul>
+    </div>
+  </section>
+
+  <!-- 단자대 -->
+  <section class="panel" id="p-strips" role="tabpanel" aria-labelledby="t-strips" hidden>
+    <div class="panel-head">
+      <div>
+        <h2>단자대 번호표</h2>
+        <p>사진의 노란 마킹 플레이트를 순서대로 옮겼습니다. 분류를 눌러 해당 단자만 강조하고, 단자를 누르면 설명이 나옵니다. 줄무늬 단자는 사진에서 선이 연결되지 않은 예비 단자입니다.</p>
+      </div>
+    </div>
+    <div class="toolbar">
+      <label class="search"><span class="sr-only">단자 검색</span><input type="search" id="stripSearch" placeholder="선번 검색 (예: X000, BKN1, S485)" autocomplete="off"></label>
+      <button class="switch" role="switch" id="swUnwired" aria-checked="true"><span class="track"></span><span>미결선 단자 표시</span></button>
+    </div>
+    <div class="chips-row" id="kindChips" aria-label="단자 분류"></div>
+    <div class="strips" id="stripList"></div>
+  </section>
+
+  <!-- 현장 사진 -->
+  <section class="panel" id="p-photos" role="tabpanel" aria-labelledby="t-photos" hidden>
+    <div class="panel-head">
+      <div>
+        <h2>현장 사진 보관</h2>
+        <p>사진은 이 브라우저의 영구 저장소(IndexedDB)에 자동 저장됩니다. 28장이 넘어도 계속 추가할 수 있습니다.</p>
+      </div>
+      <div class="toolbar" style="margin:0">
+        <label class="search" style="flex-basis:240px"><span class="sr-only">사진 검색</span><input type="search" id="photoSearch" placeholder="사진 번호, 장비명, 메모 검색" autocomplete="off"></label>
+        <button class="btn btn-danger btn-sm" id="clearPhotos">전체 사진 비우기</button>
+      </div>
+    </div>
+    <div class="dz" id="dropZone" tabindex="0" role="button" aria-label="사진 추가">
+      <h3>여기를 눌러 선택하거나 사진을 끌어다 놓으세요</h3>
+      <p>여러 장을 한꺼번에 넣을 수 있고, 도면 글씨가 읽히도록 긴 변 1600px로 줄여 저장합니다.</p>
+      <input type="file" id="multiPhotoInput" accept="image/*" multiple hidden>
+    </div>
+    <div class="photo-grid" id="photoGrid"></div>
+  </section>
+
+  <!-- 일람표 -->
+  <section class="panel" id="p-table" role="tabpanel" aria-labelledby="t-table" hidden>
+    <div class="panel-head">
+      <div>
+        <h2>PLC I/O · 단자대 일람표</h2>
+        <p>표 안의 PLC 주소·선번·연결 기기·관련 사진은 눌러서 바로 고칠 수 있습니다. 처음 목록은 사진 5의 결선된 단자에서 가져온 예시이며, 연결 기기는 도면으로 확인해 채워 주세요.</p>
+      </div>
+    </div>
+    <form class="addform" id="addForm" autocomplete="off">
+      <input type="text" id="tEquip" placeholder="장비명 (예: TB-B)" required>
+      <input type="text" id="tTb" placeholder="단자번호 (예: TB-B-12)" required>
+      <select id="tType" aria-label="구분">
+        <option value="DI">DI (입력)</option><option value="DO">DO (출력)</option><option value="AI">AI (아날로그 입력)</option>
+        <option value="AO">AO (아날로그 출력)</option><option value="PWR">PWR (전원)</option><option value="COM">COM (통신·공통)</option>
+      </select>
+      <input type="text" id="tAddr" placeholder="PLC 주소">
+      <input type="text" id="tWire" placeholder="선번 (예: X000)" required>
+      <input type="text" id="tDesc" placeholder="연결 기기 / 센서명" required>
+      <input type="text" id="tPhotoRef" placeholder="관련 사진 (예: #05)">
+      <button type="submit" class="btn btn-primary">단자 추가</button>
+    </form>
+    <div class="tablewrap">
+      <table class="tt">
+        <thead><tr><th>장비명</th><th>단자번호</th><th>구분</th><th>PLC 주소</th><th>선번</th><th>연결 기기 / 명칭</th><th>관련 사진</th><th></th></tr></thead>
+        <tbody id="termTableBody"></tbody>
+      </table>
+    </div>
+  </section>
+</main>
+
+<div class="modal" id="imgModal" role="dialog" aria-modal="true" aria-label="사진 확대">
+  <button class="mbtn close" id="mClose" aria-label="닫기">&times;</button>
+  <button class="mbtn prev" id="mPrev" aria-label="이전 사진">&#8249;</button>
+  <button class="mbtn next" id="mNext" aria-label="다음 사진">&#8250;</button>
+  <div class="fig">
+    <img id="modalImg" src="" alt="">
+    <div class="fig-cap" id="modalCaption"></div>
+    <div class="eqrow" id="modalEq"></div>
+  </div>
+</div>
+<div class="toast" id="toast" role="status"></div>
+
+<script id="embeddedDataScript">const EMBEDDED_STATE = /*__EMBEDDED_STATE__*/null;</script>
+<script id="assetDataScript">const CROPS = /*__CROPS__*/{}; const PRODUCTS = /*__PRODUCTS__*/{};</script>
+
+<script>
+'use strict';
+/* ═══ 데이터: 장비 도감 ═══════════════════════════════════════════
+   ph = 해당 장비가 찍힌 사진 번호(첨부 순서 1~19). conf = ok(라벨 확인) / est(추정) / unk(미식별) */
+const CATS = { breaker: '차단기', contactor: '접촉기·보호', plc: 'PLC·I/O', drive: '인버터', power: '전원·변압', relay: '릴레이', terminal: '단자·접지', misc: '부대 기기', unknown: '확인 필요' };
+const CONF = { ok: '라벨 확인', est: '추정', unk: '미식별' };
+
+const EQUIP = [
+/* ── 차단기 ── */
+{ id: 'abs104c', cat: 'breaker', conf: 'ok', maker: 'LS ELECTRIC', model: 'ABS 104c', name: 'Metasol 배선용 차단기(MCCB) 4극 125A', kind: '배선용 차단기 (MCCB)',
+  spec: ['4극 (단자 4점 확인, 3상 + N극)', '손잡이 정격 표기 125A', 'ABS = Metasol 표준형 시리즈'],
+  use: '과전류·단락이 생기면 회로를 자동으로 끊고, 손잡이로 수동 개폐도 하는 인입·분기용 차단기.',
+  ctx: '사진 10 차단기 열에서 가장 큰 용량입니다. 판넬 메인 인입 차단기로 보입니다(추정).',
+  terms: [['상단 4점', '전원측(LINE) 입력'], ['하단 4점', '부하측(LOAD) 출력']], ph: [10, 12], ev: '사진 10 전면 라벨 "ABS 104c · 125A · MCCB" 판독' },
+{ id: 'abn103c', cat: 'breaker', conf: 'ok', maker: 'LS ELECTRIC', model: 'ABN 103c', name: 'Metasol 배선용 차단기(MCCB) 3극 100A', kind: '배선용 차단기 (MCCB)',
+  spec: ['3극', '손잡이 정격 표기 100A', 'ABN = Metasol 경제형 시리즈'],
+  use: '과전류·단락 보호용 3상 분기 차단기.', ctx: '사진 10: 하단 단자에 선이 연결되지 않은 상태로 촬영되었습니다.',
+  terms: [['상단 3점', '전원측(LINE)'], ['하단 3점', '부하측(LOAD) — 미결선']], ph: [10, 12], ev: '사진 10 전면 라벨 "ABN 103c · 100A" 판독' },
+{ id: 'abn63c', cat: 'breaker', conf: 'ok', maker: 'LS ELECTRIC', model: 'ABN 63c', name: 'Metasol 배선용 차단기(MCCB) 3극 60A', kind: '배선용 차단기 (MCCB)',
+  spec: ['3극', '손잡이 정격 표기 60A', 'ABN = Metasol 경제형 시리즈'],
+  use: '과전류·단락 보호용 3상 분기 차단기.', ctx: '사진 10: 하단 단자 3점에 주황·흑·회색 슬리브가 씌워진 전선이 체결되어 있습니다.',
+  terms: [['상단 3점', '전원측(LINE)'], ['하단 3점', '부하측(LOAD) — 3상선 체결']], ph: [10, 12], ev: '사진 10 전면 라벨 "ABN 63c · 60A" 판독' },
+{ id: 'ebs32c', cat: 'breaker', conf: 'ok', maker: 'LS ELECTRIC', model: 'EBS 32c', name: 'Metasol 누전차단기(ELCB) 3극 30A', kind: '누전차단기 (ELCB)',
+  spec: ['3극', '손잡이 정격 표기 30A', '누전 트립 표시창 · TEST 버튼', 'EBS = Metasol 누전차단기 시리즈'],
+  use: '과전류 보호에 더해 누전을 감지하면 차단해 감전·화재를 막는 차단기.',
+  ctx: '사진 10: 하단에 선번 L000 · L001 선이 연결되어 있고, 같은 선번이 TB-A 하단 단자(L000 · L001)에 있습니다(추정).',
+  terms: [['하단 L000', '→ TB-A L000 쌍'], ['하단 L001', '→ TB-A L001 쌍']], ph: [10, 12], ev: '사진 10 전면 라벨 "EBS 32c · ELCB · 30A" 판독' },
+{ id: 'abe33b', cat: 'breaker', conf: 'ok', maker: 'LS ELECTRIC', model: 'ABE 33b', name: 'Meta-MEC 소형 MCCB 3극', kind: '배선용 차단기 (소형 프레임)',
+  spec: ['3극', '정격 전류 판독 불가 (소형 프레임)', '오른쪽 끝에 소형 누전차단기가 인접'],
+  use: '소용량 3상 분기선 보호.', ctx: '사진 10: 하단 선번 RDM · SDM · TDM 3선이 사진 6의 소형 단자대로 이어지는 것으로 보입니다(추정).',
+  terms: [['하단 RDM', 'R상 분기 → 소형 단자대'], ['하단 SDM', 'S상'], ['하단 TDM', 'T상']], ph: [10, 6], ev: '사진 10 전면 라벨 "ABE 33b" 판독, 정격은 읽히지 않음' },
+{ id: 'smart', cat: 'breaker', conf: 'ok', maker: '대륙 DAERYUK (DACO)', model: 'SMART 시리즈', name: 'DEG204NS · DBE103NS · DBE63NS · DBE32BE', kind: 'ELCB 1대 + MCCB 3대',
+  spec: ['DEG204NS: 누전차단기 4P 125A (250AF), 누전 감도 100/200/500mA 표기', 'DBE103NS: MCCB 3P 100A', 'DBE63NS: MCCB 3P 60A', 'DBE 32BE: MCCB 1Ø2W 30A, AC220V'],
+  use: '인입·분기 보호. ELCB는 누전 차단까지 겸함.', ctx: '사진 16: 사진 10의 LS Metasol 구성과 같은 용량 구성(125 · 100 · 60 · 30A)을 다른 브랜드로 설치한 차단기 열입니다.',
+  terms: [['LINE', '상단 전원측 (라벨 표기)'], ['LOAD', '하단 부하측 (라벨 표기)']], ph: [16], ev: '사진 16 라벨 "DEG204NS 125A · DBE103NS 100A · DBE63NS 60A · DBE 32BE 30A" 판독' },
+{ id: 'la63hd', cat: 'breaker', conf: 'ok', maker: 'LS ELECTRIC', model: 'LA63Hd C10', name: '소형 차단기(MCB) C특성 10A', kind: '소형 차단기 (MCB)',
+  spec: ['C 커브 · 10A', '415V~ · 차단용량 10kA 표기', '2극 구성 확인 (사진 15)'],
+  use: '제어·보조 회로의 분기 보호용 소형 차단기. 모터·변압기 기동 전류에 견디는 C 특성.',
+  ctx: '사진 10에 같은 계열이 11모듈 폭으로 나란히 설치, 사진 15 · 16에도 있습니다. 제어회로 분기용으로 보입니다(추정).',
+  terms: [['1 – 2 / 3 – 4', '극별 입력(상단) – 출력(하단), 심볼 인쇄 기준']], ph: [15, 10, 16], ev: '사진 15 라벨 "LA63Hd C10 415V~ 10A" 판독' },
+
+/* ── 접촉기·보호 ── */
+{ id: 'mc9b', cat: 'contactor', conf: 'ok', maker: 'LS ELECTRIC', model: 'MC-9b', name: 'Metasol 전자접촉기 (22AF · 9A · 3극)', kind: '전자접촉기 (마그네틱 컨택터)',
+  spec: ['주접점 3극 · 정격 9A', '보조접점 1a1b 내장 (전면 NO 43-44 / NC 31-32 표기)', '같은 열에 MC-12b 1대 포함 (사진 13)', '열동형 MT-32와 짝을 이루는 22AF 프레임'],
+  use: '코일에 전압을 주면 주접점이 닫혀 모터 등 3상 부하를 개폐하는 스위치.',
+  ctx: '사진 13: 9~10대가 일렬로 설치되고, 코일 단자마다 S/K 소자가 연결된 모터 기동 회로입니다(추정).',
+  terms: [['R/1/L1 · S/3/L2 · T/5/L3', '주회로 입력 (상단)'], ['U/2/T1 · V/4/T2 · W/6/T3', '주회로 출력 (하단)'], ['43 NO · 31 NC (표기)', '보조접점 a · b'], ['상단 회색 2점', '코일 단자로 보임 (S/K 소자 병렬)']],
+  ph: [13, 1, 10, 12], ev: '사진 13 전면 라벨 "MC-9b" 판독 (좌측에서 두 번째는 "MC-12b")' },
+{ id: 'mc6a', cat: 'contactor', conf: 'ok', maker: 'LS ELECTRIC', model: 'MC-6a', name: 'Metasol 전자접촉기 (6A · 3극)', kind: '전자접촉기 (마그네틱 컨택터)',
+  spec: ['주접점 3극 · 정격 6A', '보조접점 1a (63/NO · 64/NO 표기)', 'NEMA Size 00 표기'],
+  use: '소용량 3상 부하(소형 모터·히터 등)의 개폐.', ctx: '사진 14: 3대가 DIN 레일에 설치, 한 대의 코일에 녹색 바리스터가 붙어 있습니다.',
+  terms: [['R/1/L1 · S/3/L2 · T/5/L3', '주회로 입력'], ['U/2/T1 · V/4/T2 · W/6/T3', '주회로 출력'], ['63/NO – 64/NO', '보조접점 (a접점)']], ph: [14, 15], ev: '사진 14 전면 라벨 "MC-6a" 판독' },
+{ id: 'ua4', cat: 'contactor', conf: 'ok', maker: 'LS ELECTRIC', model: 'UA-4 (4a)', name: 'Metasol 보조접점 블록 4a', kind: '보조접점 유닛',
+  spec: ['a접점(NO) 4개: 53-54 · 63-64 · 73-74 · 83-84', '접촉기 전면에 끼우는 형식', '사진 1에 3개 블록 설치'],
+  use: '접촉기 동작에 맞춰 열리고 닫히는 접점을 늘려 다른 회로·신호를 개폐.',
+  ctx: '사진 1: 하단 공통선 BLP11 · BLN11 · BLC11 · BLC12를 접점으로 열어, 각 블록 상단 선(TTB · UDB · S1B 계열)에 공급하는 구조입니다. 브레이크 전환 회로로 보입니다(추정).',
+  terms: [['83 – 84 NO', 'BLC12 ↔ TTBC2 (UDBC2 · S1BC2)'], ['73 – 74 NO', 'BLC11 ↔ TTBC1 (UDBC1 · S1BC1)'], ['63 – 64 NO', 'BLN11 ↔ TTBN1 (UDBN1 · S1BN1)'], ['53 – 54 NO', 'BLP11 ↔ TTBP1 (UDBP1 · S1BP1)']],
+  ph: [1], ev: '사진 1 전면 라벨 "UA-4 · 4a"와 단자 표기 판독' },
+{ id: 'mt32', cat: 'contactor', conf: 'ok', maker: 'LS ELECTRIC', model: 'MT-32', name: 'Metasol 열동형 과부하 계전기', kind: '열동형 과부하 계전기 (THR)',
+  spec: ['모터 과부하·결상 보호 (검색 자료)', '전면: RESET(녹) · TRIP/TEST(적) · 전류 설정 다이얼', '보조접점 95-96 NC / 97-98 NO 표기', 'Metasol MC 접촉기 직결 또는 단독 취부'],
+  use: '모터에 설정값 이상의 전류가 오래 흐르면 접점을 바꿔 접촉기를 끊어 모터를 보호.',
+  ctx: '사진 1 · 12: MC 열 아래에 같은 간격으로 나란히 설치되어 있습니다. 보조접점선에 THC1 계열 선번이 붙어 있습니다(판독).',
+  terms: [['1/L1 · 3/L2 · 5/L3', '주회로 입력 (인쇄 "1L1 3L2 5L3")'], ['2/T1 · 4/T2 · 6/T3', '모터 쪽 출력 (인쇄 "2T1 4T2 6T3")'], ['95 – 96', 'NC 보조접점'], ['97 – 98', 'NO 보조접점']],
+  ph: [1, 10, 12], ev: '사진 1 전면 라벨 "MT-32" 와 접점 번호 판독' },
+{ id: 'surge', cat: 'contactor', conf: 'est', maker: 'PILKOR (콘덴서 표기)', model: 'S/K 소자', name: '서지 흡수 소자 (청색 콘덴서 · 녹색 바리스터)', kind: '서지 흡수기',
+  spec: ['청색 필름 콘덴서에 "S/K" 슬리브 2선', '녹색 원판 = 바리스터 (사진 14, 접촉기 1대)'],
+  use: '코일을 끌 때 생기는 서지·스파크를 흡수해 접점과 PLC 출력을 보호.',
+  ctx: '사진 13: 접촉기마다 상단 단자에 S/K 소자가 병렬로 연결되어 있습니다(추정).',
+  terms: [['S/K 2선', '접촉기 코일 단자에 병렬']], ph: [13, 14], ev: '"S/K" 슬리브와 콘덴서 외형으로 판단, 정격은 읽히지 않음' },
+
+/* ── PLC·I/O ── */
+{ id: 'xbm', cat: 'plc', conf: 'ok', maker: 'LS ELECTRIC', model: 'XBM-DN32H2', name: 'XGB 기본(본체) 유닛 32점', kind: 'PLC CPU 일체형 기본 유닛',
+  spec: ['DC24V 입력 16점 + 트랜지스터(싱크) 출력 16점', '프로그램 메모리 384KB · 고속카운터 4ch', 'RS-232C 1ch · RS-422/485 1ch · Ethernet 1ch · USB(전면 표기)', 'I/O 최대 256점까지 확장 · DIN 레일 취부', '프로그래밍: XG5000'],
+  use: 'CPU · 전원 · 기본 I/O를 한 몸에 가진 PLC 본체. 시퀀스 제어, 통신, 확장 모듈 관리를 맡음.',
+  ctx: '사진 9: 우측 사이드 패널 DIN 레일에 단독 설치. 사진 10 · 13 메인 랙에는 같은 본체 오른쪽에 확장 모듈이 이어집니다.',
+  terms: [['40핀 I/O 커넥터', 'XTB-40H 단자 인터페이스로 인출 (A1~A20 / B1~B20)'], ['RS-485 푸시인 단자', '전면 하단 5극, "RS-485" 표기'], ['LINK (RJ45)', 'Ethernet'], ['USB · MODE S/W', '프로그램 전송 · 모드 스위치']],
+  ph: [9, 10, 12], ev: '사진 9 · 10 전면 라벨 "XGB · XBM-DN32H2" 판독' },
+{ id: 'xbe_dc32a', cat: 'plc', conf: 'ok', maker: 'LS ELECTRIC', model: 'XBE-DC32A', name: 'XGB 확장 입력 모듈 DC24V 32점', kind: 'DI 확장 모듈',
+  spec: ['DC24V 입력 32점 (싱크/소스 겸용) · 1 COM', '40핀 커넥터', 'XTB-40H + C40HH 케이블 필요 (제조사 자료)'],
+  use: '스위치·센서·접점 신호를 PLC로 받아들이는 입력 모듈.', ctx: '사진 10 · 13 메인 랙에 3대 설치됩니다. 사진 13 랙에는 XBF-DV04A가 추가로 보입니다.',
+  terms: [['40핀 커넥터', '입력 32점 + COM → XTB-40H'], ['예: 선번 X000 · X001', 'TB-B 입력 선번 (사진 5)']], ph: [13, 10, 12], ev: '사진 13 모듈 상단 라벨 "XBE-DC32A" 판독' },
+{ id: 'xbe_tn32a', cat: 'plc', conf: 'ok', maker: 'LS ELECTRIC', model: 'XBE-TN32A', name: 'XGB 확장 출력 모듈 트랜지스터 32점', kind: 'DO 확장 모듈',
+  spec: ['12~24VDC 싱크 출력 32점', '0.2A/점 · 2A/COM', 'XTB-40H + C40HH 케이블 필요 (제조사 자료)'],
+  use: 'PLC 연산 결과를 릴레이·솔레노이드·램프 등으로 내보내는 출력 모듈.', ctx: '사진 10 · 13 랙에 1대, DC32A 두 대 오른쪽에 있습니다.',
+  terms: [['40핀 커넥터', '출력 32점 + 외부 전원/COM → XTB-40H'], ['예: 선번 Y168 ~ Y16F', 'TB-B 출력 선번 (사진 5)']], ph: [13, 10], ev: '사진 13 모듈 상단 라벨 "XBE-TN32A" 판독' },
+{ id: 'xbf_dv04a', cat: 'plc', conf: 'ok', maker: 'LS ELECTRIC', model: 'XBF-DV04A', name: 'XGB 아날로그 전압 출력 모듈 4ch', kind: 'AO 확장 모듈',
+  spec: ['4채널 · 12bit', '출력 0~10V', '외부 DC24V 전원 필요'],
+  use: '속도 지령·밸브 개도 같은 아날로그 전압 신호를 내보내는 모듈.', ctx: '사진 13 랙의 TN32A 오른쪽, 녹색 푸시인 단자를 사용합니다. 사진 10 랙에서는 보이지 않습니다.',
+  terms: [['전면 녹색 푸시인 단자', '채널별 V+ / COM, 24V — 배치는 매뉴얼 확인']], ph: [13], ev: '사진 13 모듈 상단 라벨 "XBF-DV04A" 판독' },
+{ id: 'xbl_c41a', cat: 'plc', conf: 'ok', maker: 'LS ELECTRIC', model: 'XBL-C41A', name: 'XGB Cnet 통신 모듈 (RS-422/485)', kind: '통신 모듈',
+  spec: ['RS-422/485 1포트 · 5핀 단자', 'Modbus RTU/ASCII · LS XGT 프로토콜', '최대 115.2kbps'],
+  use: 'PLC가 인버터·계측기 등과 시리얼 통신할 때 쓰는 모듈.', ctx: 'TB-B의 S485+ · S485− · SSG 단자와 연결할 대상으로 보입니다(추정). 해당 단자는 사진상 미결선입니다.',
+  terms: [['5핀 녹색 단자', 'RS-422/485 (TX/RX 또는 +/−, SG)']], ph: [10, 13], ev: '사진 10 · 13 모듈 상단 라벨 "XBL-C41A" 판독' },
+{ id: 'xtb40h', cat: 'plc', conf: 'est', maker: 'LS ELECTRIC', model: 'XTB-40H', name: 'XGB 40핀 단자 인터페이스', kind: '커넥터 → 나사 단자 변환 블록',
+  spec: ['A · B 두 열 번호 인쇄 (A6~A20 · B6~B20 확인)', 'XBM-DN32H2 · XBE-DC32A/TN32A용으로 안내됨 (제조사 자료)'],
+  use: '40핀 I/O 커넥터를 나사 단자로 풀어 현장 배선을 쉽게 하는 블록.', ctx: '사진 2 · 5 · 7 · 8 · 18에 같은 계열이 열을 지어 설치되어 있습니다. 상단 "XTB" 각인이 일부만 읽혀 모델은 추정입니다.',
+  terms: [['A1 ~ A20', '1열'], ['B1 ~ B20', '2열'], ['선번 X137 · P24', '블록에 붙은 라벨 (청색 점퍼 포함)']], ph: [2, 5, 7, 18], ev: 'A · B 열 번호와 적색 "XTB" 각인 일부로 판단' },
+
+/* ── 인버터 ── */
+{ id: 'ga700_37', cat: 'drive', conf: 'ok', maker: 'YASKAWA', model: 'GA700 37kW', full: 'CIPR-GA70K4075ABMA-AAAABA', name: 'GA700 범용 인버터 400V 3상 37kW/30kW', kind: 'AC 인버터 (VFD)',
+  spec: ['400V급 3상 · 37kW / 30kW 병기 라벨 (정상 / 중부하)', '전면 LCD 키패드 · RUN / ALM / READY 표시', 'CHARGE 램프 · "전원 차단 후 5분 대기" 경고 라벨'],
+  use: '3상 모터의 속도·토크를 주파수로 제어하는 인버터.',
+  ctx: '사진 11: 전면 커버를 연 모습으로 제어기판이 보입니다. 제어단자에 "RUN" · "B130" 선이 체결되어 있고, 같은 선번이 TB-A의 A130 · B130에 있습니다(추정). 사진 17은 커버를 닫은 정면입니다.',
+  terms: [['R/L1 · S/L2 · T/L3', '주전원 입력 (사진 11 하단 인쇄)'], ['U/T1 · V/T2 · W/T3', '모터 출력'], ['−, +1, +2, B1, B2', 'DC링크·리액터·제동저항 계열 — 프레임별 상이, 매뉴얼 확인'], ['"RUN" · "B130" 선', '운전 신호 접점 → TB-A A130 · B130']],
+  ph: [17, 11, 12], ev: '사진 17 형명 라벨 "CIPR-GA70K4075ABMA-AAAABA 400V 3PHASE 37kW/30kW" 판독' },
+{ id: 'ga700_22', cat: 'drive', conf: 'ok', maker: 'YASKAWA', model: 'GA700 2.2kW', full: 'CIPR-GA70K4007ABMA-AAAABA', name: 'GA700 범용 인버터 400V 3상 3.0kW/2.2kW', kind: 'AC 인버터 (VFD)',
+  spec: ['400V급 3상 · 3.0kW / 2.2kW 병기 라벨', '전면 커버 장착형 소형 프레임'],
+  use: '소용량 3상 모터의 속도 제어.', ctx: '사진 10 · 12: 대형 인버터 오른쪽, 차단기 열 아래에 설치되어 있습니다.',
+  terms: [['R/L1 · S/L2 · T/L3', '주전원 입력'], ['U/T1 · V/T2 · W/T3', '모터 출력'], ['제어단자 · 옵션', '커버 안쪽 — 사진상 확인 불가']], ph: [10, 12], ev: '사진 10 형명 라벨 "CIPR-GA70K4007ABMA-AAAABA 400V 3PHASE 3.0kW/2.2kW" 판독' },
+
+/* ── 전원·변압 ── */
+{ id: 'trafo_iso', cat: 'power', conf: 'ok', maker: 'WYES (WOOYOUNG 표기)', model: '113-82', name: '절연 변압기 (Isolating Transformer)', kind: '절연 변압기',
+  spec: ['입력 415 / 400 / 380 / 0 V 탭 인쇄', '출력 220V · 0 · E 인쇄', '용량·상수 라벨은 전선에 가려 판독 불가'],
+  use: '전원 계통을 1·2차로 분리(절연)해 노이즈·누전 영향을 줄이고 전압을 맞춤.',
+  ctx: '사진 2 · 7 · 12: 판넬 하단 우측에 설치, 투명 단자 커버가 달려 있습니다. 입력은 400V 탭에 연결되어 있습니다.',
+  terms: [['1차 S400 · T400', '400V 탭에 결선 (사진 7 좌측 단자대)'], ['2차 S220 · T220', '220V 출력 (사진 7 우측 단자대)'], ['E', '접지 (녹/황선)']], ph: [7, 2, 12], ev: '사진 7 라벨 "ISOLATING TRANSFORMER · Model 113-82" 판독, 선번 S400/T400 · S220/T220 일부 판독' },
+{ id: 'trafo_ctrl', cat: 'power', conf: 'ok', maker: 'JAEHYUN CO., LTD.', model: '제어용 변압기 500VA', name: 'CONTROL TRANSFORMER 500VA 60Hz 단상', kind: '제어용 변압기',
+  spec: ['용량 500VA · 60Hz · 단상', 'S/N 000020', '1차 0 · 380V / 2차 0 · 110V · 220V 단자 인쇄'],
+  use: '제어 회로용 전원(110V / 220V)을 만드는 강압 변압기.', ctx: '사진 18: 접지선(녹/황)이 상단 단자 한 점에 체결되어 있고 나머지 단자는 비어 있습니다.',
+  terms: [['상단 0 · 380V · E', '1차(입력) 단자 인쇄'], ['하단 0 · 110V · 220V', '2차(출력) 단자 인쇄']], ph: [18], ev: '사진 18 라벨 "CONTRO TRANSFORMER · Capa. 500VA · Freq. 60Hz" 판독 (원문 철자)' },
+{ id: 'lrs100', cat: 'power', conf: 'ok', maker: 'MEAN WELL', model: 'LRS-100-24', name: 'DC24V 스위칭 전원공급장치 (4.5A · 108W)', kind: 'SMPS',
+  spec: ['출력 24V / 4.5A / 108W', '입력 AC 85~264V', '출력 조정 21.6~28.8V', '팬 없는 자연 냉각 · 메쉬 케이스'],
+  use: 'AC를 DC24V로 바꿔 PLC·릴레이·센서에 공급.', ctx: '사진 9: 우측 패널에서 EMI 필터 아래쪽. 출력은 TB-B의 P24 · N24 분배로 이어지는 것으로 보입니다(추정).',
+  terms: [['L · N · 접지', 'AC 입력 — 선번 A140 · B140 · E'], ['−V', 'DC 0V — 선번 N24'], ['+V', 'DC +24V — 선번 +24']], ph: [9], ev: '사진 9 본체 라벨 "LRS-100-24" 판독' },
+{ id: 'emi_filter', cat: 'power', conf: 'est', maker: 'Fine Suntronix (표기)', model: 'SN-M6H-CM', name: 'EMI 노이즈 필터 (전원 라인)', kind: 'EMI 필터',
+  spec: ['본체에 "EMI FILTER" 표기', '정격 전류 판독 불가', '상단 IN / 하단 OUT 단자'],
+  use: '전원선으로 드나드는 고주파 노이즈를 줄임.', ctx: '사진 9: SMPS 바로 위에서 SMPS의 AC 입력(A140 · B140)에 연결된 것으로 보입니다(추정).',
+  terms: [['IN (상단) K132 · K130', '입력측 선번 판독'], ['OUT (하단) · E', '출력측·접지 — 라벨 일부만 판독']], ph: [9], ev: '본체 표기 "SN-M6H-CM · EMI FILTER" 일부 판독' },
+
+/* ── 릴레이 ── */
+{ id: 'hr705', cat: 'relay', conf: 'ok', maker: 'KACON', model: 'HR705-4PL', name: '파워 릴레이 4PDT 24VDC + 14핀 DIN 소켓', kind: '전자 릴레이',
+  spec: ['4c접점 (4PDT) · 3A', '코일 DC24V · LED 표시', '14핀 DIN 레일 소켓 (KMY4 계열로 보임)'],
+  use: '작은 제어 신호로 여러 접점을 동시에 개폐해 신호를 분기·증폭.', ctx: '사진 9: 우측 패널 상단 DIN 레일에 2개 설치, 소켓 단자에 P24 선번 선이 체결되어 있습니다.',
+  terms: [['코일 (소켓 13 – 14, 일반 배열)', 'P24 선번선 체결 — 코일 + 쪽'], ['접점 4c', '소켓 1~12번 단자']], ph: [9], ev: '사진 9 릴레이 상면 "HR705-4PL · 24VDC" 판독' },
+{ id: 'honeywell', cat: 'relay', conf: 'est', maker: 'Honeywell', model: 'SZR-LY4 계열', name: '4극 파워 릴레이 (부분 촬영)', kind: '전자 릴레이',
+  spec: ['제조사 로고 "Honeywell" 판독', '정격·코일 전압 판독 불가'],
+  use: '제어 신호의 접점 분기용 릴레이.', ctx: '사진 9 좌상단에 일부만 촬영되어 설치 위치·결선은 알 수 없습니다.',
+  terms: [['번호 판독 불가', '소켓 단자 미촬영']], ph: [9], ev: '상면 "Honeywell · SZR-LY…" 일부 판독' },
+{ id: 'relay_tb', cat: 'relay', conf: 'est', maker: '미식별', model: '릴레이 터미널 블록', name: '4점 릴레이 터미널 블록 (다이오드 부착)', kind: '릴레이 터미널 블록',
+  spec: ['블록당 4점 · 소형 릴레이 4개 · 황색 고정 클립', '상단 PLC 출력측과 하단 부하측 이중 단자', '상단 배선에 검정 다이오드 확인'],
+  use: 'PLC 트랜지스터 출력으로 릴레이를 구동해 외부 부하(접촉기·램프 등)를 개폐하고, PLC 출력을 보호.',
+  ctx: '사진 1 좌측, 사진 14 · 15 우측 DIN 레일에 3블록 이상이 이어져 있습니다.',
+  terms: [['상단 Y028 · Y029 · Y02A · Y02C', 'PLC 출력 선번 (블록 1, 판독)'], ['상단 Y023 · Y024 · Y025 …', '블록 2 · 3 (일부 판독)'], ['하단 C028 · C029 · C02A · C02C', '부하측 접점 선번 (블록 1)']], ph: [1, 14, 15], ev: '선번 라벨은 판독, 제조사·모델은 가려져 있음' },
+{ id: 'iolink', cat: 'relay', conf: 'est', maker: 'IOLINK (표기)', model: 'SHN12324', name: '슬림 릴레이 (24V 코일 · 10A 접점)', kind: '슬림 인터페이스 릴레이',
+  spec: ['표기 24V · 10A 250V~ / 10A 30V=', '측면 심볼: 코일 + 접점 1개'],
+  use: 'PLC·센서의 작은 신호로 부하 접점을 개폐하는 슬림 릴레이.', ctx: '사진 15: LA63Hd 오른쪽, 검정 소켓 위에 장착되어 있습니다.',
+  terms: [['번호 판독 불가', '측면 심볼만 보임']], ph: [15], ev: '상면 "IOLINK · SHN12324" 판독, 릴레이로의 분류는 심볼 기반 추정' },
+
+/* ── 단자·접지 ── */
+{ id: 'tb_a', cat: 'terminal', conf: 'ok', maker: '미식별', model: 'TB-A', name: '모터·브레이크 중계 단자대 (2열 · 노란 마커)', kind: '터미널 블록 (TB)',
+  spec: ['55점 · 좌측 노란 마커 / 우측 선번 슬리브', '전체 번호는 "단자대" 탭에서 확인'],
+  use: '현장 모터선·브레이크선·접지를 판넬 내부 배선과 중계하는 단자대.', ctx: '사진 5 좌측 열입니다. 오른쪽에 TB-B가 나란히 설치되어 있습니다.',
+  terms: [['BLP11 · BLN11 · BLC11 · BLC12', '브레이크 라인 (UA-4와 같은 선번)'], ['UH1 · VH1 · WH1 외 5계통', '3상 모터선 (H · AD · T · LL1~4)'], ['HBP1 · TBP1 · LLBP1~4 + BKN1', '브레이크 + / 공통 −'], ['L000 · L001', '단상 공급선 (EBS 32c)'], ['A130 · B130', 'RUN 접점선 (GA700)'], ['E', '접지 (6점)']],
+  ph: [5], ev: '사진 5 마킹 플레이트 전수 판독' },
+{ id: 'tb_b', cat: 'terminal', conf: 'ok', maker: '미식별', model: 'TB-B', name: '24V · I/O · 통신 단자대 (2열 · 노란 마커)', kind: '터미널 블록 (TB)',
+  spec: ['60점 · P24 · N24 청색 점퍼바 · 접지 황색 점퍼바', '예비(미결선) 단자 다수'],
+  use: 'DC24V 분배, PLC 입출력 중계, 시리얼 통신선 중계.', ctx: '사진 5 우측 열. 결선된 것은 P24 · N24 · X000/X001 · Y168~Y16F · +12/N12 뿐입니다.',
+  terms: [['P24 (5점)', 'DC24V + — 청색 점퍼바'], ['N24 (6점)', 'DC24V 0V'], ['X000 · X001', 'PLC 입력'], ['Y168 ~ Y16F', 'PLC 출력 8점'], ['RD1 · SD1 · SG1 / RF± · SG', '시리얼 계열 (미결선)'], ['S485+ · S485− · SSG', 'RS-485 (미결선)'], ['TC1T/R ± · F1T/R ± · F2T/R ±', '송수신 차동쌍 (미결선)'], ['+12 · N12', 'DC12V']],
+  ph: [5, 12], ev: '사진 5 마킹 플레이트 전수 판독' },
+{ id: 'tb_c', cat: 'terminal', conf: 'ok', maker: '미식별', model: 'TB-C', name: '모터 전원·브레이크 단자대 (UPL1 ~ E)', kind: '터미널 블록 (TB)',
+  spec: ['28점 · 투명 커버 · 노란 마커'],
+  use: '모터 3상선과 브레이크 전원을 중계.', ctx: '사진 19 단독 촬영입니다. 선번 접두 P · D · S가 브레이크(PBP · DBP · SBP)와 대응합니다(추정).',
+  terms: [['UPL1 · VPL1 · WPL1', 'PL 계통 3상'], ['UPR1 · VPR1 · WPR1', 'PR 계통 3상'], ['UDL1 · VDL1 · WDL1', 'DL 계통 3상'], ['UDR1 · VDR1 · WDR1', 'DR 계통 3상'], ['US1 · VS1 · WS1', 'S 계통 3상'], ['PBP1 · DBP1 · SBP1 + BKN1', '브레이크 + / 공통 −'], ['RC1 · SC1 · TC1', 'R · S · T 3상 C1 계통 (추정)'], ['E', '접지 (4점)']],
+  ph: [19], ev: '사진 19 마킹 플레이트 전수 판독' },
+{ id: 'tb_small', cat: 'terminal', conf: 'ok', maker: '미식별', model: 'RDM · SDM · TDM · E', name: '소형 4P 단자대', kind: '터미널 블록 (소형)',
+  spec: ['4점 · 흰색 마킹 플레이트'], use: '3상 분기선과 접지를 중계.', ctx: '사진 6 상단. ABE 33b 하단 선번과 같아 3상 분기 중계로 보입니다(추정).',
+  terms: [['RDM', 'R상'], ['SDM', 'S상'], ['TDM', 'T상'], ['E', '접지']], ph: [6], ev: '사진 6 라벨 판독' },
+{ id: 'tb_big', cat: 'terminal', conf: 'est', maker: '미식별', model: '대형 전원 단자대', name: '황동 볼트형 대형 단자대 (투명 커버)', kind: '터미널 블록 (대용량)',
+  spec: ['굵은 전원선용 · 2열 블록을 적층', '라벨 없음'], use: '큰 전류의 전원선·접지선을 분기·중계.', ctx: '사진 3 우상단, 사진 6 중단·하단에 설치. 녹/황 접지선이 체결된 단자가 보입니다.',
+  terms: [['번호 없음', '사진 3 · 6: 녹/황 접지선 체결 단자 확인']], ph: [3, 6], ev: '외형 기준, 정격은 읽히지 않음' },
+{ id: 'earth_bar', cat: 'terminal', conf: 'ok', maker: '미식별', model: '접지 부스바', name: '구리 접지 부스바 (10구)', kind: '접지바',
+  spec: ['구리 막대 · 나사 체결 약 10구', '각 선에 "E" 마킹 튜브 (녹/황선)'],
+  use: '판넬 내 모든 기기의 접지선을 한 곳에 모아 외함·대지로 연결.', ctx: '사진 2 · 3 · 7: 외함 하단 벽에 고정되어 있습니다.',
+  terms: [['E (약 10점)', '접지선 체결 — 마킹 튜브 "E"']], ph: [7, 3, 2], ev: '사진 7 접지선 "E" 마킹 판독' },
+
+/* ── 부대 기기 ── */
+{ id: 'switch5', cat: 'misc', conf: 'est', maker: '미식별', model: '5포트 허브', name: '5포트 이더넷 스위칭 허브', kind: '네트워크 장비',
+  spec: ['RJ45 5포트 · 소형 검정 케이스', '철판 브래킷 취부'],
+  use: '판넬 안 PLC(XBM LINK) · HMI · 노트북을 같은 네트워크로 묶음.', ctx: '사진 2 · 8 · 9: 우측 패널 하단에 설치. 브랜드 표기는 보이지 않습니다.',
+  terms: [['RJ45 × 5', 'LAN 포트 (번호 인쇄 없음)']], ph: [8, 2, 9], ev: '외형 기준' },
+{ id: 'schuko', cat: 'misc', conf: 'ok', maker: '미식별', model: '슈코 콘센트', name: '유럽형 접지 콘센트 (2구 · 1구 원형)', kind: '판넬 콘센트',
+  spec: ['접지 클립이 있는 CEE 7/3 형', '2구 각형 (사진 4) · 1구 원형 (사진 8 · 9)'],
+  use: '노트북·계측기 등 점검 장비용 판넬 내 보수 전원.', ctx: '사진 4 · 8 · 9 · 12: 우측 벽면 덕트 옆에 설치, 녹/황 접지선이 연결되어 있습니다.',
+  terms: [['L · N · PE', '일반 3극 — 적·녹/황선 체결 확인']], ph: [4, 8, 9], ev: '외형 기준' },
+{ id: 'selector', cat: 'misc', conf: 'est', maker: '미식별', model: '셀렉터 · 키 스위치', name: '철제 박스형 선택 스위치 2개 (흑색 노브 · 키)', kind: '조작 스위치',
+  spec: ['좌: 흑색 노브 셀렉터', '우: 키 스위치 (키 꽂힘)'],
+  use: '수동/자동·로컬/원격 전환이나 키로 조작 권한을 제한하는 스위치(일반 용도).', ctx: '사진 9 · 10: 우측 패널·차단기 열 아래에 설치. 용도 라벨이 없어 정확한 기능은 도면 확인이 필요합니다.',
+  terms: [['번호 판독 불가', '박스 내부 접점']], ph: [10, 9], ev: '외형 기준' },
+
+/* ── 확인 필요 ── */
+{ id: 'u_safety', cat: 'unknown', conf: 'unk', maker: '미식별', model: '황색 모듈', name: '황색 하우징 안전 릴레이 (추정)', kind: '안전 릴레이 (추정)',
+  spec: ['표시창 PWR · M1 · M2 · FB · OUT1 · OUT2', 'OFF-DELAY 다이얼', '검은 푸시인 단자 다단'],
+  use: '비상정지·도어 스위치 같은 안전 입력을 감시해 출력을 차단하는 모듈(일반 용도).', ctx: '사진 9 · 10: XGB PLC 랙 왼쪽에 설치. 모델을 알려면 상단 라벨 사진이 필요합니다.',
+  terms: [['푸시인 단자', '번호 판독 불가 — 제조사 매뉴얼 확인']], ph: [10, 9, 12], ev: '제조사 로고·형명이 보이지 않음' },
+{ id: 'u_alu', cat: 'unknown', conf: 'unk', maker: '미식별', model: '알루미늄 케이스', name: '알루미늄 방열 케이스 소자', kind: '미식별',
+  spec: ['리브 형상의 알루미늄 외함', '상단 2개 나사 단자 + 취부 브래킷', '라벨 판독 불가'],
+  use: '제동저항기 또는 판넬 히터로 보이나 라벨이 없어 단정할 수 없습니다.', ctx: '사진 4 확대, 사진 12: 외함 좌측 벽면에 세로로 설치되어 있고 상단에 하나가 놓여 있습니다.',
+  terms: [['상단 2단자', '번호 판독 불가']], ph: [4, 12], ev: '외형만 확인' },
+{ id: 'u_drive', cat: 'unknown', conf: 'unk', maker: '미식별', model: '검정 인버터', name: '검정 하우징 인버터 (일부 촬영)', kind: '인버터로 보임',
+  spec: ['녹색 다이얼 + ESC 버튼 + 7세그먼트 표시', 'QR 라벨'],
+  use: 'GA700 아래쪽에 있는 다른 제조사 인버터로 보이나 모델을 읽을 수 없습니다.', ctx: '사진 17 하단에 일부만 촬영되었습니다.',
+  terms: [['번호 판독 불가', '—']], ph: [17], ev: '키패드 형상만 확인' }
+];
+EQUIP.forEach(e => { e._hay = [e.id, e.model, e.full, e.name, e.maker, e.kind, e.use, e.ctx, CATS[e.cat], CONF[e.conf], ...e.spec, ...e.terms.flat()].join(' ').toLowerCase(); });
+
+/* ═══ 데이터: 단자대 스트립 ═══════════════════════════════════ */
+const KIND = { pwr: '전원 DC', gnd: '접지 E', motor: '모터 3상', brake: '브레이크', io: 'PLC 입출력', comm: '통신', ac: 'AC 공급', sig: '신호·기타' };
+const G = (labels, kind, note, wired) => ({ labels: labels.split(' '), kind, note, wired: wired !== false });
+const STRIPS = [
+  { id: 'TB-A', title: '모터·브레이크 중계 단자대', ph: 5, desc: '사진 5 좌측 열. 위에서 아래 순서.', groups: [
+    G('BLP11 BLN11', 'brake', 'BL 계통 브레이크 라인 + / −. 사진상 이 두 점은 선이 연결되지 않음', false),
+    G('BLC11 BLC12', 'brake', 'BL 계통 접점선. UA-4 보조접점의 BLC11 · BLC12와 같은 선번(추정)'),
+    G('RD WH BU', 'sig', '선색 약어(적 · 백 · 청)로 보이는 3선. 용도 미확인'),
+    G('UH1 VH1 WH1', 'motor', 'H 계통 3상 모터선 U · V · W. 계통명의 뜻은 도면 확인'),
+    G('E', 'gnd', '접지 (녹/황선)'),
+    G('UAD1 VAD1 WAD1', 'motor', 'AD 계통 3상 모터선'),
+    G('UT1 VT1 WT1', 'motor', 'T 계통 3상 모터선'),
+    G('E', 'gnd', '접지'),
+    G('ULL1 VLL1 WLL1', 'motor', 'LL1 계통 3상 모터선'),
+    G('E', 'gnd', '접지'),
+    G('ULL2 VLL2 WLL2', 'motor', 'LL2 계통 3상 모터선'),
+    G('ULL3 VLL3 WLL3', 'motor', 'LL3 계통 3상 모터선'),
+    G('E', 'gnd', '접지'),
+    G('ULL4 VLL4 WLL4', 'motor', 'LL4 계통 3상 모터선'),
+    G('HBP1 BKN1', 'brake', 'H 계통 브레이크 + (HBP1) / 공통 − (BKN1)'),
+    G('TBP1 BKN1', 'brake', 'T 계통 브레이크 + (TBP1) / 공통 −'),
+    G('LLBP1 BKN1 LLBP2 BKN1 LLBP3 BKN1 LLBP4 BKN1', 'brake', 'LL1~LL4 계통 브레이크 + (LLBP1~4) / 공통 −(BKN1)'),
+    G('L000 L000 L001 L001', 'ac', 'EBS 32c 하단 선번 L000 · L001과 같음. 단상 공급선(추정)'),
+    G('E E E', 'gnd', '접지 3점'),
+    G('A130 A130', 'sig', 'A130 쌍. GA700 제어단자 RUN 접점선과 짝을 이루는 선번(추정)'),
+    G('B130 B130', 'sig', 'B130 쌍. GA700 제어단자의 "B130" 라벨선과 같은 선번(추정)')
+  ] },
+  { id: 'TB-B', title: '24V · I/O · 통신 단자대', ph: 5, desc: '사진 5 우측 열. P24 · N24는 점퍼바로 묶여 있고, 통신 계열은 대부분 비어 있습니다.', groups: [
+    G('P24 P24 P24 P24 P24', 'pwr', 'DC24V + 분배. 5점을 청색 점퍼바로 공통 연결'),
+    G('N24 N24 N24 N24 N24 N24', 'pwr', 'DC24V 0V 분배. 6점을 청색 점퍼바로 공통 연결'),
+    G('E', 'gnd', '접지'),
+    G('E000 E001 E002 E003 E004 E005 E006 E007', 'sig', 'E000 ~ E007. 선 미연결, 용도 미확인', false),
+    G('DLS1 DLS2 DLS3', 'sig', 'DLS1 ~ 3. 선 미연결, 리밋스위치 계열 표기로 보임(추정)', false),
+    G('X000 X001', 'io', 'PLC 입력 선번 (청색선 결선)'),
+    G('Y168 Y169 Y16A Y16B Y16C Y16D Y16E Y16F', 'io', 'PLC 출력 선번 Y168 ~ Y16F (청색선 결선)'),
+    G('E E E E', 'gnd', '접지. 황색 점퍼바로 공통 연결'),
+    G('RD1 SD1 SG1', 'comm', 'RS-232C 계열 표기(RD 수신 · SD 송신 · SG 신호 GND, 추정). 선 미연결', false),
+    G('RF+ RF- SG', 'comm', 'RF± / SG. 용도 미확인, 선 미연결', false),
+    G('S485+ S485- SSG', 'comm', 'RS-485 (+ / − / 실드). XBL-C41A 5핀 단자와 연결할 선으로 보임(추정). 선 미연결', false),
+    G('TC1T+ TC1T- TC1R+ TC1R-', 'comm', 'TC1 송신(T) · 수신(R) 차동쌍으로 보임(추정). 선 미연결', false),
+    G('F1T+ F1T- F1R+ F1R- F2T+ F2T- F2R+ F2R-', 'comm', 'F1 · F2 채널 송수신 차동쌍으로 보임(추정). 선 미연결', false),
+    G('+12 N12', 'pwr', 'DC12V + / 0V (청색선 결선)')
+  ] },
+  { id: 'TB-C', title: '모터 전원·브레이크 단자대', ph: 19, desc: '사진 19. 모든 단자에 선이 연결되어 있습니다.', groups: [
+    G('UPL1 VPL1 WPL1', 'motor', 'PL 계통 3상 모터선'),
+    G('E', 'gnd', '접지'),
+    G('UPR1 VPR1 WPR1', 'motor', 'PR 계통 3상 모터선'),
+    G('UDL1 VDL1 WDL1', 'motor', 'DL 계통 3상 모터선'),
+    G('E', 'gnd', '접지'),
+    G('UDR1 VDR1 WDR1', 'motor', 'DR 계통 3상 모터선'),
+    G('US1 VS1 WS1', 'motor', 'S 계통 3상 모터선'),
+    G('E', 'gnd', '접지'),
+    G('PBP1 BKN1 DBP1 BKN1 SBP1 BKN1', 'brake', '브레이크 + (PBP1 · DBP1 · SBP1) / 공통 −(BKN1). P · D · S 계통 모터와 번호가 대응(추정)'),
+    G('RC1 SC1 TC1', 'ac', 'R · S · T 3상 C1 계통 공급선(추정)'),
+    G('E', 'gnd', '접지')
+  ] },
+  { id: 'TB-S', title: '소형 4P 단자대', ph: 6, desc: '사진 6 상단. 3상 분기선과 접지.', groups: [
+    G('RDM SDM TDM', 'ac', 'ABE 33b 하단 선번과 같은 3상 분기선(추정)'),
+    G('E', 'gnd', '접지')
+  ] },
+  { id: 'RT', title: '릴레이 터미널 블록', ph: 1, desc: '사진 1. 블록당 4점, 상단 PLC 출력측과 하단 부하측.', groups: [
+    G('Y028 Y029 Y02A Y02C', 'io', '블록 1 상단 PLC 출력측 선번 (판독)'),
+    G('Y023 Y024 Y025', 'io', '블록 2 · 3 상단 선번 (일부만 판독)'),
+    G('C028 C029 C02A C02C', 'sig', '블록 1 하단 부하측 접점 선번. 상단 Y028 ~ Y02C와 대응(추정)')
+  ] }
+];
+STRIPS.forEach(s => { let n = 0; s.cells = []; s.groups.forEach((g, gi) => g.labels.forEach(l => s.cells.push({ n: ++n, label: l, kind: g.kind, note: g.note, wired: g.wired, g: gi }))); });
+
+/* ═══ 유틸 ═══════════════════════════════════════════════════ */
+const $ = (s, r = document) => r.querySelector(s);
+const $$ = (s, r = document) => [...r.querySelectorAll(s)];
+const esc = s => String(s == null ? '' : s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+const lsGet = (k, d) => { try { const v = localStorage.getItem(k); return v === null ? d : v; } catch (e) { return d; } };
+const lsSet = (k, v) => { try { localStorage.setItem(k, v); } catch (e) {} };
+const debounce = (fn, ms) => { let t; return (...a) => { clearTimeout(t); t = setTimeout(() => fn(...a), ms); }; };
+const motionOn = () => document.documentElement.getAttribute('data-motion') !== 'off';
+const pad2 = n => String(n).padStart(2, '0');
+
+let toastTimer;
+function toast(msg) { const el = $('#toast'); el.textContent = msg; el.classList.add('show'); clearTimeout(toastTimer); toastTimer = setTimeout(() => el.classList.remove('show'), 2400); }
+
+/* 두 번 눌러 실행하는 버튼 (confirm() 대신) */
+function armed(btn, label, run) {
+  if (btn.dataset.armed === '1') { clearTimeout(btn._t); btn.dataset.armed = '0'; btn.textContent = btn.dataset.label; run(); return; }
+  btn.dataset.label = btn.dataset.label || btn.textContent; btn.dataset.armed = '1'; btn.textContent = label;
+  btn._t = setTimeout(() => { btn.dataset.armed = '0'; btn.textContent = btn.dataset.label; }, 3000);
+}
+
+/* ═══ 저장소 (IndexedDB) ═════════════════════════════════════ */
+const DB_NAME = 'PLC_PERMANENT_DB_V3', STORE = 'app_state';
+let storageOK = true;
+const defaultState = () => ({ v: 3, updatedAt: 0, photos: [], terminals: seedTerminals(), productImages: {} });
+let state = defaultState();
+
+function seedTerminals() {
+  const b = STRIPS.find(s => s.id === 'TB-B'), out = [];
+  b.cells.forEach(c => {
+    if (!c.wired || !['pwr', 'io'].includes(c.kind)) return;
+    const type = c.kind === 'pwr' ? 'PWR' : (c.label[0] === 'X' ? 'DI' : 'DO');
+    const desc = c.kind === 'pwr' ? (c.label.startsWith('P24') ? 'DC24V + 분배' : c.label.startsWith('N24') ? 'DC24V 0V 분배' : 'DC12V ' + (c.label[0] === '+' ? '+' : '0V')) : (type === 'DI' ? 'PLC 입력 (연결 기기 미기록)' : 'PLC 출력 (연결 기기 미기록)');
+    out.push({ id: 'T-seed-' + c.n, equip: 'TB-B (사진 5 우측)', tb: 'TB-B-' + pad2(c.n), type, addr: '', wire: c.label, desc, photoRef: '#05' });
+  });
+  return out;
+}
+
+function openDB() {
+  return new Promise((res, rej) => {
+    if (!window.indexedDB) return rej(new Error('no indexedDB'));
+    const r = indexedDB.open(DB_NAME, 1);
+    r.onupgradeneeded = () => { if (!r.result.objectStoreNames.contains(STORE)) r.result.createObjectStore(STORE); };
+    r.onsuccess = () => res(r.result); r.onerror = () => rej(r.error);
+  });
+}
+async function idbGet(key) {
+  const db = await openDB();
+  return new Promise((res, rej) => { const q = db.transaction(STORE).objectStore(STORE).get(key); q.onsuccess = () => res(q.result); q.onerror = () => rej(q.error); });
+}
+async function saveState() {
+  state.updatedAt = Date.now(); updateCounter();
+  try {
+    const db = await openDB();
+    await new Promise((res, rej) => { const tx = db.transaction(STORE, 'readwrite'); tx.objectStore(STORE).put(state, 'MAIN'); tx.oncomplete = res; tx.onerror = () => rej(tx.error); });
+    storageOK = true;
+  } catch (e) { storageOK = false; console.error('저장 오류:', e); }
+  setStatus();
+}
+const saveSoon = debounce(saveState, 450);
+
+function setStatus(msg) {
+  const t = $('#storageStatusText'), d = $('#stDot');
+  d.classList.toggle('bad', !storageOK);
+  t.textContent = msg || (storageOK
+    ? `영구 저장소(IndexedDB) 연결됨 · 사진 ${state.photos.length}장 · 일람표 ${state.terminals.length}행 저장`
+    : '이 브라우저는 영구 저장소를 쓸 수 없습니다. 이 탭을 닫으면 편집 내용이 사라지니 "사진 내장 HTML로 영구 저장"을 사용하세요.');
+}
+function updateCounter() {
+  const n = state.photos.length;
+  $('#photoCounterBadge').textContent = `사진 ${n} / 28장`;
+  $('#meterFill').style.width = Math.min(100, n / 28 * 100) + '%';
+  $('#nPhotos').textContent = n; $('#nTable').textContent = state.terminals.length;
+}
+
+async function loadState() {
+  const emb = (typeof EMBEDDED_STATE !== 'undefined' && EMBEDDED_STATE && Array.isArray(EMBEDDED_STATE.photos)) ? EMBEDDED_STATE : null;
+  let saved = null;
+  try { saved = await idbGet('MAIN'); } catch (e) { storageOK = false; }
+  let pick = saved && emb ? ((saved.updatedAt || 0) >= (emb.updatedAt || 0) ? saved : emb) : (saved || emb);
+  state = Object.assign(defaultState(), pick || {});
+  if (!Array.isArray(state.terminals)) state.terminals = seedTerminals();
+  if (!state.productImages) state.productImages = {};
+  renderAll();
+  if (pick === emb && emb) saveState(); else setStatus();
+}
+
+/* ═══ 테마 · 모션 · 탭 · 토글 ═════════════════════════════════ */
+function moveThumb(root, active) {
+  const th = $(':scope > .thumb', root); if (!th || !active) return;
+  th.style.width = active.offsetWidth + 'px'; th.style.transform = `translateX(${active.offsetLeft}px)`;
+}
+function initSeg(root, value, onChange) {
+  const set = (v, silent) => {
+    $$('[role="radio"]', root).forEach(b => b.setAttribute('aria-checked', String(b.dataset.v === v)));
+    moveThumb(root, $('[aria-checked="true"]', root)); if (!silent) onChange(v);
+  };
+  root.addEventListener('click', e => { const b = e.target.closest('[role="radio"]'); if (b) set(b.dataset.v); });
+  set(value, true); root._set = set;
+}
+function initSwitch(el, value, onChange) {
+  el.setAttribute('aria-checked', String(!!value));
+  el.addEventListener('click', () => { const v = el.getAttribute('aria-checked') !== 'true'; el.setAttribute('aria-checked', String(v)); onChange(v); });
+}
+function applyTheme(v) {
+  const d = document.documentElement;
+  if (v === 'light' || v === 'dark') d.setAttribute('data-theme', v); else d.removeAttribute('data-theme');
+  lsSet('plc.theme', v);
+}
+const TABS = ['catalog', 'strips', 'photos', 'table'];
+function setTab(id, push = true) {
+  if (!TABS.includes(id)) id = 'catalog';
+  TABS.forEach(t => { const on = t === id; $('#p-' + t).hidden = !on; const b = $('#t-' + t); b.setAttribute('aria-selected', String(on)); b.tabIndex = on ? 0 : -1; });
+  moveThumb($('#tabs'), $('#t-' + id));
+  $('#t-' + id).scrollIntoView({ block: 'nearest', inline: 'nearest' });
+  if (push) { try { history.replaceState(null, '', '#' + id); } catch (e) {} }
+}
+function refreshThumbs() {
+  moveThumb($('#tabs'), $('.tab[aria-selected="true"]'));
+  [$('#themeSeg'), $('#viewSeg')].forEach(s => moveThumb(s, $('[aria-checked="true"]', s)));
+}
+
+/* ═══ 장비 도감 렌더 ═════════════════════════════════════════ */
+const cat = { q: '', cats: new Set(), onlyOk: false, openAll: false, view: 'card' };
+const openSet = new Set(), srcMode = {};
+const productOf = id => state.productImages[id] || PRODUCTS[id] || '';
+
+function renderChips() {
+  const counts = {}; EQUIP.forEach(e => counts[e.cat] = (counts[e.cat] || 0) + 1);
+  $('#catChips').innerHTML = `<button class="chip" data-cat="*" aria-pressed="${cat.cats.size === 0}">전체<span class="c">${EQUIP.length}</span></button>` +
+    Object.keys(CATS).map(k => `<button class="chip" data-cat="${k}" aria-pressed="${cat.cats.has(k)}">${CATS[k]}<span class="c">${counts[k] || 0}</span></button>`).join('');
+}
+function cardHTML(e, i) {
+  const prod = productOf(e.id), mode = srcMode[e.id] || (prod ? 'product' : 'field');
+  const img = mode === 'product' && prod ? prod : (CROPS[e.id] || '');
+  const open = cat.openAll || openSet.has(e.id);
+  const tchips = e.terms.slice(0, 4).map(t => `<li class="t" title="${esc(t[0])}">${esc(t[0])}</li>`).join('') + (e.terms.length > 4 ? `<li class="t more">+${e.terms.length - 4}</li>` : '');
+  return `<article class="card${open ? ' open' : ''}" id="c-${e.id}" data-id="${e.id}" style="--i:${i}">
+  <div class="media${img ? '' : ' noimg'}" data-media="${e.id}" title="원본 사진 보기">
+    ${img ? `<img src="${esc(img)}" alt="${esc(e.model)} ${mode === 'product' ? '제품 사진' : '현장 사진'}" loading="lazy" data-fid="${e.id}" referrerpolicy="no-referrer">` : esc(e.model)}
+    <span class="badge cat">${esc(CATS[e.cat])}</span><span class="badge conf ${e.conf}">${CONF[e.conf]}</span>
+    ${prod ? `<span class="srcseg"><button data-src="${e.id}" data-m="field" aria-pressed="${mode === 'field'}">현장</button><button data-src="${e.id}" data-m="product" aria-pressed="${mode === 'product'}">제품</button></span>` : ''}
+  </div>
+  <div class="cbody">
+    <p class="maker">${esc(e.maker)}</p>
+    <h3 class="model">${esc(e.model)}</h3>
+    <p class="cname">${esc(e.name)}</p>
+    <p class="cuse">${esc(e.use)}</p>
+    <ul class="tchips">${tchips}</ul>
+    <button class="exp" data-exp="${e.id}" aria-expanded="${open}" aria-controls="d-${e.id}"><span>${open ? '상세 접기' : '단자번호 · 사양 · 쓰임새 보기'}</span><span class="caret"></span></button>
+    <div class="detail" id="d-${e.id}"><div class="in"><div class="dpad">
+      <dl class="dl">
+        <div><dt>종류</dt><dd>${esc(e.kind)}</dd></div>
+        <div><dt>제조사</dt><dd>${esc(e.maker)}</dd></div>
+        <div><dt>형번</dt><dd class="mono">${esc(e.full || e.model)}</dd></div>
+        <div><dt>주요 사양</dt><dd><ul>${e.spec.map(s => `<li>${esc(s)}</li>`).join('')}</ul></dd></div>
+        <div><dt>이 제어반</dt><dd>${esc(e.ctx)}</dd></div>
+      </dl>
+      <table class="ttable"><thead><tr><th>단자번호</th><th>설명</th></tr></thead><tbody>${e.terms.map(t => `<tr><td>${esc(t[0])}</td><td>${esc(t[1])}</td></tr>`).join('')}</tbody></table>
+      <div class="phrow">촬영된 사진 ${e.ph.map(n => `<button class="pill" data-photo="${n}">#${pad2(n)}</button>`).join('')}</div>
+      <p class="ev">판독 근거: ${esc(e.ev)}</p>
+      <div class="prod"><span class="k">제품 사진 (공식 이미지를 파일 또는 주소로 지정)</span>
+        <label class="btn btn-sm">파일 선택<input type="file" accept="image/*" hidden data-prodfile="${e.id}"></label>
+        <input type="url" id="pu-${e.id}" placeholder="이미지 주소 붙여넣기" aria-label="${esc(e.model)} 제품 사진 주소">
+        <button class="btn btn-sm" data-produrl="${e.id}">적용</button>
+        ${prod ? `<button class="btn btn-sm btn-danger" data-prodrm="${e.id}">제거</button>` : ''}
+      </div>
+    </div></div></div>
+  </div></article>`;
+}
+function renderCatalog() {
+  renderChips();
+  const q = cat.q.trim().toLowerCase();
+  const list = EQUIP.filter(e => (!cat.cats.size || cat.cats.has(e.cat)) && (!cat.onlyOk || e.conf === 'ok') && (!q || e._hay.includes(q)));
+  const g = $('#catGrid'); g.classList.toggle('is-list', cat.view === 'list');
+  g.innerHTML = list.length ? list.map(cardHTML).join('') : '<div class="empty">조건에 맞는 장비가 없습니다. 검색어나 분류를 바꿔 보세요.</div>';
+  $('#catCount').textContent = `${list.length} / ${EQUIP.length}종`;
+  $('#nCatalog').textContent = EQUIP.length;
+}
+function setExpanded(card, on) {
+  card.classList.toggle('open', on);
+  const b = $('.exp', card); b.setAttribute('aria-expanded', String(on)); $('span', b).textContent = on ? '상세 접기' : '단자번호 · 사양 · 쓰임새 보기';
+}
+function gotoEquip(id) {
+  closeModal(); setTab('catalog');
+  cat.q = ''; cat.cats.clear(); cat.onlyOk = false; $('#catSearch').value = ''; $('#swOk').setAttribute('aria-checked', 'false');
+  openSet.add(id); renderCatalog();
+  const c = $('#c-' + id); if (!c) return;
+  c.scrollIntoView({ behavior: motionOn() ? 'smooth' : 'auto', block: 'center' });
+  c.classList.remove('flash'); void c.offsetWidth; c.classList.add('flash');
+}
+function initCatalog() {
+  $('#catSearch').addEventListener('input', e => { cat.q = e.target.value; renderCatalog(); });
+  $('#catChips').addEventListener('click', e => {
+    const b = e.target.closest('.chip'); if (!b) return;
+    if (b.dataset.cat === '*') cat.cats.clear(); else cat.cats.has(b.dataset.cat) ? cat.cats.delete(b.dataset.cat) : cat.cats.add(b.dataset.cat);
+    renderCatalog();
+  });
+  initSeg($('#viewSeg'), lsGet('plc.view', 'card'), v => { cat.view = v; lsSet('plc.view', v); renderCatalog(); });
+  cat.view = lsGet('plc.view', 'card') === 'list' ? 'list' : 'card';
+  initSwitch($('#swOk'), false, v => { cat.onlyOk = v; renderCatalog(); });
+  initSwitch($('#swOpen'), false, v => { cat.openAll = v; $$('#catGrid .card').forEach(c => setExpanded(c, v || openSet.has(c.dataset.id))); });
+
+  const grid = $('#catGrid');
+  grid.addEventListener('click', e => {
+    const card = e.target.closest('.card'); if (!card) return; const id = card.dataset.id;
+    const exp = e.target.closest('[data-exp]'), ph = e.target.closest('[data-photo]'), src = e.target.closest('[data-src]');
+    if (exp) { const on = !card.classList.contains('open'); on ? openSet.add(id) : openSet.delete(id); setExpanded(card, on); return; }
+    if (ph) { openPhotoByNo(+ph.dataset.photo); return; }
+    if (src) { srcMode[id] = src.dataset.m; renderCatalog(); return; }
+    if (e.target.closest('[data-produrl]')) {
+      const v = $('#pu-' + id).value.trim();
+      if (!/^https?:\/\//i.test(v)) { toast('http(s)로 시작하는 이미지 주소를 넣어 주세요'); return; }
+      state.productImages[id] = v; srcMode[id] = 'product'; saveState(); openSet.add(id); renderCatalog(); toast('제품 사진을 지정했습니다'); return;
+    }
+    if (e.target.closest('[data-prodrm]')) { delete state.productImages[id]; delete srcMode[id]; saveState(); openSet.add(id); renderCatalog(); toast('제품 사진을 제거했습니다'); return; }
+    if (e.target.closest('[data-media]') && !e.target.closest('.srcseg')) { openPhotoByNo(EQUIP.find(x => x.id === id).ph[0]); }
+  });
+  grid.addEventListener('change', async e => {
+    const f = e.target.closest('[data-prodfile]'); if (!f || !f.files[0]) return;
+    const id = f.dataset.prodfile; state.productImages[id] = await compressAndRead(f.files[0], 900, .82); srcMode[id] = 'product';
+    await saveState(); openSet.add(id); renderCatalog(); toast('제품 사진을 저장했습니다');
+  });
+  grid.addEventListener('error', e => {
+    const img = e.target; if (img.tagName !== 'IMG' || !img.dataset.fid || img.dataset.fb) return;
+    img.dataset.fb = '1'; const alt = CROPS[img.dataset.fid]; if (alt) img.src = alt;
+  }, true);
+}
+
+/* ═══ 단자대 렌더 ════════════════════════════════════════════ */
+const sc = { q: '', kinds: new Set(), unwired: true, sel: null };
+function renderKindChips() {
+  const counts = {}; STRIPS.forEach(s => s.cells.forEach(c => counts[c.kind] = (counts[c.kind] || 0) + 1));
+  $('#kindChips').innerHTML = `<button class="chip" data-kind="*" aria-pressed="${sc.kinds.size === 0}">전체</button>` +
+    Object.keys(KIND).map(k => `<button class="chip" data-kind="${k}" aria-pressed="${sc.kinds.has(k)}"><span class="sw" style="--k:var(--k-${k === 'ac' ? 'ac' : k})"></span>${KIND[k]}<span class="c">${counts[k] || 0}</span></button>`).join('');
+}
+function renderStrips() {
+  renderKindChips();
+  $('#stripList').innerHTML = STRIPS.map((s, i) => `<section class="strip" style="--i:${i}" data-strip="${s.id}">
+    <div class="strip-h"><span class="strip-id">${s.id}</span><h3>${esc(s.title)}</h3><span class="grow"></span><button class="pill" data-photo="${s.ph}">사진 #${pad2(s.ph)}</button><p>${esc(s.desc)}</p></div>
+    <div class="mkgrid">${s.cells.filter(c => sc.unwired || c.wired).map(c => `<button class="mk k-${c.kind}${c.wired ? '' : ' unwired'}" data-s="${s.id}" data-n="${c.n}" title="${esc(c.label)}"><span class="no">${c.n}</span>${esc(c.label)}</button>`).join('')}</div>
+    <div class="tinfo" id="ti-${s.id}">단자를 눌러 보세요.</div></section>`).join('');
+  applyStripFilter();
+}
+function applyStripFilter() {
+  const q = sc.q.trim().toLowerCase();
+  $$('#stripList .mk').forEach(b => {
+    const s = STRIPS.find(x => x.id === b.dataset.s), c = s.cells[b.dataset.n - 1];
+    const kindOk = !sc.kinds.size || sc.kinds.has(c.kind), hit = q && c.label.toLowerCase().includes(q);
+    b.classList.toggle('dim', !(kindOk && (!q || hit)));
+    b.classList.toggle('hit', !!(q && hit && kindOk));
+  });
+}
+function showTerm(btn) {
+  const s = STRIPS.find(x => x.id === btn.dataset.s), c = s.cells[btn.dataset.n - 1];
+  $$('#stripList .mk.sel').forEach(b => b.classList.remove('sel')); btn.classList.add('sel');
+  $('#ti-' + s.id).innerHTML = `<b>${esc(s.id)} · ${c.n}번 ${esc(c.label)}</b><span class="kd" style="--k:var(--k-${c.kind})">${KIND[c.kind]}</span>${c.wired ? '' : '<span class="kd" style="--k:var(--ink-3)">미결선</span>'}<br>${esc(c.note)}`;
+}
+function initStrips() {
+  $('#stripSearch').addEventListener('input', e => { sc.q = e.target.value; applyStripFilter(); });
+  $('#kindChips').addEventListener('click', e => {
+    const b = e.target.closest('.chip'); if (!b) return;
+    if (b.dataset.kind === '*') sc.kinds.clear(); else sc.kinds.has(b.dataset.kind) ? sc.kinds.delete(b.dataset.kind) : sc.kinds.add(b.dataset.kind);
+    renderKindChips(); applyStripFilter();
+  });
+  initSwitch($('#swUnwired'), true, v => { sc.unwired = v; renderStrips(); });
+  $('#stripList').addEventListener('click', e => {
+    const mk = e.target.closest('.mk'); if (mk) { showTerm(mk); return; }
+    const ph = e.target.closest('[data-photo]'); if (ph) openPhotoByNo(+ph.dataset.photo);
+  });
+  $('#nStrips').textContent = STRIPS.length;
+}
+
+/* ═══ 사진 보관 ══════════════════════════════════════════════ */
+function compressAndRead(file, maxW, q) {
+  return new Promise(resolve => {
+    const r = new FileReader();
+    r.onload = ev => {
+      const img = new Image();
+      img.onload = () => {
+        let w = img.width, h = img.height; const m = Math.max(w, h);
+        if (m > maxW) { w = Math.round(w * maxW / m); h = Math.round(h * maxW / m); }
+        const c = document.createElement('canvas'); c.width = w; c.height = h; c.getContext('2d').drawImage(img, 0, 0, w, h);
+        resolve(c.toDataURL('image/jpeg', q));
+      };
+      img.onerror = () => resolve(ev.target.result);
+      img.src = ev.target.result;
+    };
+    r.readAsDataURL(file);
+  });
+}
+async function handleFiles(list) {
+  const files = Array.from(list).filter(f => f.type.startsWith('image/')); if (!files.length) return;
+  setStatus(`${files.length}장의 이미지를 처리해 영구 저장소에 기록하는 중입니다…`);
+  for (const f of files) {
+    const dataUrl = await compressAndRead(f, 1600, .82);
+    state.photos.push({ id: 'IMG-' + Date.now() + '-' + Math.random().toString(36).slice(2, 6), ref: '', slotNo: '#' + pad2(state.photos.length + 1), title: f.name.replace(/\.[^/.]+$/, ''), equipName: '', memo: '', dataUrl });
+  }
+  await saveState(); renderPhotos(); toast(`${files.length}장을 저장했습니다`);
+}
+const photoNo = p => p.ref ? parseInt(p.ref.slice(1), 10) : 0;
+function eqChips(p) {
+  const n = photoNo(p); if (!n) return '';
+  return EQUIP.filter(e => e.ph.includes(n)).map(e => `<button class="pill" data-goto="${e.id}">${esc(e.model)}</button>`).join('');
+}
+function renderPhotos() {
+  const q = ($('#photoSearch').value || '').trim().toLowerCase();
+  const list = state.photos.filter(p => !q || `${p.slotNo} ${p.title} ${p.equipName} ${p.memo}`.toLowerCase().includes(q));
+  $('#photoGrid').innerHTML = list.length ? list.map((p, i) => `<article class="pcard" data-pid="${p.id}" style="--i:${i}">
+    <div class="pcard-top"><span>사진 ${esc(p.slotNo)}</span><button class="btn btn-sm btn-danger" data-delp="${p.id}">삭제</button></div>
+    <div class="thumbw" data-open="${p.id}"><img src="${p.dataUrl}" alt="${esc(p.title)}" loading="lazy"></div>
+    <div class="pbody">
+      <input type="text" value="${esc(p.title)}" placeholder="사진/도면 제목" aria-label="제목" data-f="title">
+      <input type="text" value="${esc(p.equipName)}" placeholder="소속 장비/단자대 (예: TB-A · TB-B)" aria-label="소속 장비" data-f="equipName">
+      <textarea placeholder="단자 번호·선번·특이사항 메모" aria-label="메모" data-f="memo">${esc(p.memo)}</textarea>
+      ${eqChips(p) ? `<div class="eqrow">${eqChips(p)}</div>` : ''}
+    </div></article>`).join('') : `<div class="empty">${state.photos.length ? '검색 결과가 없습니다.' : '등록된 사진이 없습니다. 위 파란 영역을 눌러 사진을 추가하세요.'}</div>`;
+  updateCounter();
+}
+function initPhotos() {
+  const dz = $('#dropZone'), input = $('#multiPhotoInput');
+  dz.addEventListener('click', () => input.click());
+  dz.addEventListener('keydown', e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); input.click(); } });
+  input.addEventListener('change', () => { handleFiles(input.files); input.value = ''; });
+  dz.addEventListener('dragover', e => { e.preventDefault(); dz.classList.add('dragover'); });
+  dz.addEventListener('dragleave', () => dz.classList.remove('dragover'));
+  dz.addEventListener('drop', e => { e.preventDefault(); dz.classList.remove('dragover'); if (e.dataTransfer.files.length) handleFiles(e.dataTransfer.files); });
+  $('#photoSearch').addEventListener('input', renderPhotos);
+  $('#clearPhotos').addEventListener('click', e => armed(e.currentTarget, '한 번 더 누르면 모두 삭제', () => { state.photos = []; saveState(); renderPhotos(); toast('사진을 모두 비웠습니다'); }));
+  const grid = $('#photoGrid');
+  grid.addEventListener('click', e => {
+    const del = e.target.closest('[data-delp]'), op = e.target.closest('[data-open]'), go = e.target.closest('[data-goto]');
+    if (go) { gotoEquip(go.dataset.goto); return; }
+    if (op) { openPhotoById(op.dataset.open); return; }
+    if (del) armed(del, '한 번 더', () => {
+      state.photos = state.photos.filter(p => p.id !== del.dataset.delp);
+      state.photos.forEach((p, i) => p.slotNo = '#' + pad2(i + 1)); saveState(); renderPhotos();
+    });
+  });
+  grid.addEventListener('input', e => {
+    const f = e.target.dataset.f; if (!f) return;
+    const p = state.photos.find(x => x.id === e.target.closest('.pcard').dataset.pid); if (p) { p[f] = e.target.value; saveSoon(); }
+  });
+}
+
+/* ═══ 사진 모달 ══════════════════════════════════════════════ */
+let mIdx = -1;
+function showModal(i) {
+  const n = state.photos.length; if (!n) return; mIdx = (i + n) % n; const p = state.photos[mIdx];
+  $('#modalImg').src = p.dataUrl; $('#modalImg').alt = p.title;
+  $('#modalCaption').textContent = `${p.slotNo} · ${p.title}${p.equipName ? ' (' + p.equipName + ')' : ''}`;
+  $('#modalEq').innerHTML = eqChips(p);
+  $('#imgModal').classList.add('open'); $('#mClose').focus({ preventScroll: true });
+}
+function openPhotoById(id) { showModal(state.photos.findIndex(p => p.id === id)); }
+function openPhotoByNo(n) {
+  const i = state.photos.findIndex(p => photoNo(p) === n);
+  if (i < 0) { toast(`사진 #${pad2(n)}이(가) 보관함에 없습니다 (삭제되었거나 번호가 바뀜)`); return; } showModal(i);
+}
+function closeModal() { $('#imgModal').classList.remove('open'); }
+function initModal() {
+  $('#mClose').addEventListener('click', closeModal);
+  $('#mPrev').addEventListener('click', () => showModal(mIdx - 1));
+  $('#mNext').addEventListener('click', () => showModal(mIdx + 1));
+  $('#imgModal').addEventListener('click', e => {
+    if (e.target.id === 'imgModal') closeModal();
+    const g = e.target.closest('[data-goto]'); if (g) gotoEquip(g.dataset.goto);
+  });
+  document.addEventListener('keydown', e => {
+    const open = $('#imgModal').classList.contains('open');
+    if (e.key === 'Escape') { closeModal(); closePop(); }
+    if (open && e.key === 'ArrowLeft') showModal(mIdx - 1);
+    if (open && e.key === 'ArrowRight') showModal(mIdx + 1);
+  });
+}
+
+/* ═══ 일람표 ═════════════════════════════════════════════════ */
+function renderTerminals() {
+  $('#termTableBody').innerHTML = state.terminals.map((t, i) => `<tr style="--i:${i}" data-tid="${t.id}">
+    <td><strong>${esc(t.equip)}</strong></td><td class="mono"><b>${esc(t.tb)}</b></td><td><span class="type">${esc(t.type)}</span></td>
+    <td><input class="cell mono" data-f="addr" value="${esc(t.addr)}" placeholder="미기록" aria-label="PLC 주소"></td>
+    <td><input class="cell mono" data-f="wire" value="${esc(t.wire)}" aria-label="선번"></td>
+    <td><input class="cell" data-f="desc" value="${esc(t.desc)}" style="min-width:200px" aria-label="연결 기기"></td>
+    <td><input class="cell mono" data-f="photoRef" value="${esc(t.photoRef || '')}" style="min-width:60px" aria-label="관련 사진"></td>
+    <td><button class="btn btn-sm btn-danger" data-delt="${t.id}">삭제</button></td></tr>`).join('') ||
+    '<tr><td colspan="8" class="empty">등록된 단자가 없습니다. 위 입력줄에서 추가하세요.</td></tr>';
+  updateCounter();
+}
+function initTable() {
+  $('#addForm').addEventListener('submit', e => {
+    e.preventDefault(); const v = id => $('#' + id).value.trim();
+    state.terminals.push({ id: 'T-' + Date.now(), equip: v('tEquip'), tb: v('tTb'), type: $('#tType').value, addr: v('tAddr'), wire: v('tWire'), desc: v('tDesc'), photoRef: v('tPhotoRef') });
+    e.target.reset(); saveState(); renderTerminals(); toast('단자를 추가했습니다');
+  });
+  const body = $('#termTableBody');
+  body.addEventListener('input', e => {
+    const f = e.target.dataset.f; if (!f) return;
+    const t = state.terminals.find(x => x.id === e.target.closest('tr').dataset.tid); if (t) { t[f] = e.target.value; saveSoon(); }
+  });
+  body.addEventListener('click', e => {
+    const d = e.target.closest('[data-delt]'); if (!d) return;
+    armed(d, '한 번 더', () => { state.terminals = state.terminals.filter(t => t.id !== d.dataset.delt); saveState(); renderTerminals(); });
+  });
+}
+
+/* ═══ 내보내기 · 영구 저장 ═══════════════════════════════════ */
+let PRISTINE = '';
+function download(name, blob) {
+  const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = name; document.body.appendChild(a); a.click(); a.remove(); setTimeout(() => URL.revokeObjectURL(a.href), 4000);
+}
+function exportCSV() {
+  const head = ['장비명', '단자번호', '구분', 'PLC주소', '선번', '연결기기명칭', '관련사진번호'];
+  const rows = state.terminals.map(t => [t.equip, t.tb, t.type, t.addr, t.wire, t.desc, t.photoRef].map(v => `"${String(v || '').replace(/"/g, '""')}"`).join(','));
+  download('PLC_단자대_일람표.csv', new Blob(['﻿' + [head.join(','), ...rows].join('\r\n')], { type: 'text/csv;charset=utf-8;' }));
+  toast('CSV를 내려받았습니다');
+}
+function downloadEmbeddedHTML() {
+  state.updatedAt = Date.now();
+  const json = JSON.stringify(state).replace(/</g, '\\u003c');
+  const html = PRISTINE.replace(/(<script id="embeddedDataScript">)[\s\S]*?(<\/script>)/, (m, a, b) => a + 'const EMBEDDED_STATE = ' + json + ';' + b);
+  download(`PLC_단자대_사진${state.photos.length}장_영구내장본.html`, new Blob([html], { type: 'text/html;charset=utf-8' }));
+  toast('사진을 내장한 HTML을 내려받았습니다');
+}
+function closePop() { $('#savePop').classList.remove('open'); $('#saveBtn').setAttribute('aria-expanded', 'false'); }
+function initMenu() {
+  const btn = $('#saveBtn'), pop = $('#savePop');
+  btn.addEventListener('click', e => { e.stopPropagation(); const on = !pop.classList.contains('open'); pop.classList.toggle('open', on); btn.setAttribute('aria-expanded', String(on)); });
+  document.addEventListener('click', e => { if (!e.target.closest('#savePop')) closePop(); });
+  $('#actCsv').addEventListener('click', () => { closePop(); exportCSV(); });
+  $('#actEmbed').addEventListener('click', () => { closePop(); downloadEmbeddedHTML(); });
+  $('#actPrint').addEventListener('click', () => { closePop(); window.print(); });
+}
+
+/* 폰 폭에서는 아래로 스크롤하면 상단 바를 숨기고, 위로 스크롤하면 다시 보여줌 */
+function initBarAutoHide() {
+  const bar = $('.bar'), mq = matchMedia('(max-width: 760px)'); let last = window.scrollY;
+  window.addEventListener('scroll', () => {
+    if (!mq.matches) { bar.classList.remove('away'); return; }
+    const y = window.scrollY, d = y - last; if (Math.abs(d) < 8) return;
+    if (d > 0 && y > 140) { bar.classList.add('away'); closePop(); } else if (d < 0) bar.classList.remove('away');
+    last = y;
+  }, { passive: true });
+}
+
+/* ═══ 시작 ═══════════════════════════════════════════════════ */
+function renderAll() { renderCatalog(); renderStrips(); renderPhotos(); renderTerminals(); updateCounter(); setTimeout(refreshThumbs, 0); }
+
+window.addEventListener('DOMContentLoaded', () => {
+  PRISTINE = '<!DOCTYPE html>\n' + document.documentElement.outerHTML.replace(/<html([^>]*)>/, (m, a) => '<html' + a.replace(/\sdata-(theme|motion)="[^"]*"/g, '') + '>');
+
+  initSeg($('#themeSeg'), ['light', 'dark'].includes(lsGet('plc.theme', 'system')) ? lsGet('plc.theme', 'system') : 'system', applyTheme);
+  initSwitch($('#motionSw'), motionOn(), v => { document.documentElement.setAttribute('data-motion', v ? 'on' : 'off'); lsSet('plc.motion', v ? 'on' : 'off'); toast(v ? '모션을 켰습니다' : '모션을 껐습니다'); });
+  $('#tabs').addEventListener('click', e => { const b = e.target.closest('.tab'); if (b) setTab(b.dataset.tab); });
+  initCatalog(); initStrips(); initPhotos(); initModal(); initTable(); initMenu();
+  setTab(location.hash.slice(1) || 'catalog', false);
+  window.addEventListener('hashchange', () => setTab(location.hash.slice(1), false));
+  window.addEventListener('resize', refreshThumbs);
+  if (document.fonts && document.fonts.ready) document.fonts.ready.then(refreshThumbs);
+  initBarAutoHide();
+  loadState();
+});
+</script>
+</body>
+</html>
