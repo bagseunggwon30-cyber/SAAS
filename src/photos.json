@@ -7,15 +7,15 @@
   "P06": { "title": "소형 단자대·대형 전원 단자대", "equipName": "소형 4P (RDM·SDM·TDM·E) · 대형 단자대", "memo": "ABE 33b 하단 선번과 같은 RDM·SDM·TDM. 아래쪽에 LS 열동형 과부하 계전기 포장 상자가 보임." },
   "P07": { "title": "절연 변압기 113-82", "equipName": "절연 변압기 · 접지 부스바", "memo": "1차 S400·T400, 2차 S220·T220·E. 우측 하단은 접지 부스바." },
   "P08": { "title": "5포트 허브와 원형 콘센트", "equipName": "이더넷 허브 · 슈코 콘센트", "memo": "우측 패널 하단. 콘센트 선(적 2선 + 녹/황)이 덕트를 지남." },
-  "P09": { "title": "우측 사이드 패널", "equipName": "릴레이 · XBM PLC · EMI 필터 · SMPS · 콘센트 · 허브", "memo": "HR705-4PL ×2(P24 결선), XBM-DN32H2, EMI 필터 SN-M6H-CM, LRS-100-24, 콘센트, 허브. 좌측에 Honeywell 릴레이 · 셀렉터 · 황색 안전 모듈." },
-  "P10": { "title": "차단기 열 + GA700 2.2kW + PLC 랙", "equipName": "ABS 104c · ABN 103c/63c · EBS 32c · ABE 33b · GA700", "memo": "아래에 MC·MT-32 열, 우하단에 PLC 랙(XBM-DN32H2 + 확장), 그 왼쪽에 황색 안전 모듈." },
+  "P09": { "title": "우측 사이드 패널", "equipName": "릴레이 · XBM PLC · EMI 필터 · SMPS · 콘센트 · 허브", "memo": "HR705-4PL ×2(P24 결선), XBM-DN32H2, EMI 필터 SN-M6H-CM, LRS-100-24, 콘센트, 허브. 좌측에 Honeywell 릴레이 · 셀렉터 · Autonics SFC-R212-R23-L 안전 릴레이." },
+  "P10": { "title": "차단기 열 + GA700 2.2kW + PLC 랙", "equipName": "ABS 104c · ABN 103c/63c · EBS 32c · ABE 33b · GA700", "memo": "아래에 MC·MT-32 열, 우하단에 PLC 랙(XBM-DN32H2 + 확장), 그 왼쪽에 Autonics SFC-R212-R23-L 안전 릴레이." },
   "P11": { "title": "GA700 전면 커버 개방", "equipName": "YASKAWA GA700 (대형)", "memo": "제어기판·옵션 슬롯 노출. 제어단자에 RUN · B130 라벨선이 체결됨." },
   "P12": { "title": "제어반 전경", "equipName": "전체", "memo": "좌상단 대형 GA700(커버 개방), 중앙 소형 GA700, 하단 MC/MT 열, 중앙 단자대 열, 우측 사이드 패널." },
   "P13": { "title": "MC 열 + S/K + PLC 랙", "equipName": "MC-9b · MC-12b · S/K 소자 · XGB 확장 모듈", "memo": "코일 단자마다 S/K 콘덴서 연결. 우하단 PLC 랙: XBE-DC32A ×3 · XBE-TN32A · XBF-DV04A · XBL-C41A." },
   "P14": { "title": "MC-6a ×3 + 릴레이 터미널", "equipName": "MC-6a · 바리스터 · 릴레이 터미널", "memo": "우측 릴레이 터미널(다이오드 부착). 한 대의 코일에 녹색 바리스터." },
   "P15": { "title": "LA63Hd + 슬림 릴레이 + MC", "equipName": "LA63Hd C10 · SHN12324 · MC-6a", "memo": "LA63Hd C10 10A 2극 구성. 오른쪽에 IOLINK SHN12324 슬림 릴레이와 접촉기." },
   "P16": { "title": "대륙 SMART 차단기 열", "equipName": "DEG204NS · DBE103NS · DBE63NS · DBE32BE · LA63Hd", "memo": "ELCB 125A(감도 100/200/500mA 표기), MCCB 100A · 60A · 30A(1Ø2W AC220V), LA63Hd C10 다수." },
-  "P17": { "title": "GA700 37kW 정면", "equipName": "YASKAWA GA700 37kW/30kW", "memo": "CIPR-GA70K4075ABMA-AAAABA 400V 3PHASE. 아래쪽에 검정 하우징 인버터가 일부 보임." },
+  "P17": { "title": "GA700 37kW 정면", "equipName": "YASKAWA GA700 37kW/30kW", "memo": "CIPR-GA70K4075ABMA-AAAABA 400V 3PHASE. 아래쪽에 Schneider Altivar Machine ATV320U22N4C가 일부 보임." },
   "P18": { "title": "제어용 변압기 500VA", "equipName": "JAEHYUN CONTROL TRANSFORMER", "memo": "1차 0 · 380V, 2차 0 · 110V · 220V, 60Hz, S/N 000020." },
   "P19": { "title": "TB-C 모터·브레이크 단자대", "equipName": "TB-C", "memo": "UPL1 ~ E, PBP1 · BKN1 · DBP1 · SBP1, RC1 · SC1 · TC1." }
 }

@@ -160,10 +160,13 @@ main { padding-block: 14px 56px; }
 .media img { width: 100%; height: 100%; object-fit: cover; transition: transform .7s var(--ease); }
 .card:hover .media img { transform: scale(1.06); }
 .media.noimg { display: grid; place-items: center; font: 700 28px var(--font-disp); color: var(--ink-3); }
+.media.prod { background: #fff; }
+.media.prod img { object-fit: contain; padding: 8px 8px 30px; }
 .badge { position: absolute; top: 9px; padding: 3px 9px; border-radius: 99px; font-size: 11.5px; font-weight: 600; backdrop-filter: blur(6px); }
 .badge.cat { left: 9px; background: rgba(10,12,16,.72); color: #fff; }
 .badge.conf { right: 9px; }
 .badge.ok { background: var(--ok-soft); color: var(--ok); }
+.badge.usr { background: var(--ctrl-soft); color: var(--ctrl); }
 .badge.est { background: var(--warn-soft); color: var(--warn); }
 .badge.unk { background: var(--bad-soft); color: var(--bad); }
 .srcseg { position: absolute; left: 9px; bottom: 9px; display: inline-flex; padding: 3px; border-radius: 99px; background: rgba(10,12,16,.72); gap: 2px; }
@@ -387,12 +390,13 @@ html[data-motion="off"] *, html[data-motion="off"] *::before, html[data-motion="
         <button role="radio" data-v="card" aria-checked="true">카드</button>
         <button role="radio" data-v="list" aria-checked="false">목록</button>
       </div>
-      <button class="switch" role="switch" id="swOk" aria-checked="false"><span class="track"></span><span>라벨 확인 항목만</span></button>
+      <button class="switch" role="switch" id="swOk" aria-checked="false"><span class="track"></span><span>확인된 항목만</span></button>
       <button class="switch" role="switch" id="swOpen" aria-checked="false"><span class="track"></span><span>상세 모두 펼치기</span></button>
     </div>
     <div class="chips-row" id="catChips" aria-label="분류 필터"></div>
     <div class="legend-note">
       <span><b class="mono">라벨 확인</b> 사진에서 모델명·정격을 직접 읽음</span>
+      <span><b class="mono">사용자 확인</b> 형명을 알려 주신 항목 (제품 사진과 대조)</span>
       <span><b class="mono">추정</b> 모양·배선·위치로 판단</span>
       <span><b class="mono">미식별</b> 라벨이 없어 단정 불가</span>
     </div>
@@ -405,6 +409,7 @@ html[data-motion="off"] *, html[data-motion="off"] *::before, html[data-motion="
         <li><a href="https://baoanjsc.com.vn/products/plc-modular-type-unit-ls-XBM-DN32H2_495957_en.aspx" target="_blank" rel="noopener">XBM-DN32H2 (유통사 상품 페이지)</a></li>
         <li><a href="https://www.ip-systemes.com/media/5057/0733-catalogue-metasol-mc-contacteurs-departs-moteurs-ls-electric.pdf" target="_blank" rel="noopener">LS Metasol MC 카탈로그</a> · <a href="https://etinco.vn/wp-content/uploads/catalogue-ls-meta-mec-mccb-elcb.pdf" target="_blank" rel="noopener">LS Meta-MEC MCCB/ELCB 카탈로그</a></li>
         <li><a href="https://uk.rs-online.com/web/p/switching-power-supplies/1065846" target="_blank" rel="noopener">Mean Well LRS-100-24</a> · <a href="https://wolfautomation.com/ice-cube-relay-3a-4pdt-24vdc-input-led" target="_blank" rel="noopener">Kacon HR705-4PL</a> · <a href="https://baoanjsc.com.vn/products/miniature-circuit-breakers-ls-LA63H-4P-C10A_851406_en.aspx" target="_blank" rel="noopener">LS LA63H C10 (LA63Hd 접미사 "d"는 미확인)</a> · <a href="https://plc-direct.com/en-se/products/ciprga70c4075abaa" target="_blank" rel="noopener">Yaskawa GA700 30/37kW</a></li>
+        <li><a href="https://www.wolfautomation.com/sfc-r212-r23-safety-controller-relay-unit-2-in" target="_blank" rel="noopener">Autonics SFC-R212-R23 (유통사 페이지)</a> · <a href="https://eshop.se.com/za/variable-speed-drive-altivar-machine-atv320-2-2-kw-380-500-v-3-phases-compact-atv320u22n4c.html" target="_blank" rel="noopener">Schneider ATV320U22N4C</a></li>
       </ul>
     </div>
   </section>
@@ -495,7 +500,7 @@ html[data-motion="off"] *, html[data-motion="off"] *::before, html[data-motion="
 /* ═══ 데이터: 장비 도감 ═══════════════════════════════════════════
    ph = 해당 장비가 찍힌 사진 번호(첨부 순서 1~19). conf = ok(라벨 확인) / est(추정) / unk(미식별) */
 const CATS = { breaker: '차단기', contactor: '접촉기·보호', plc: 'PLC·I/O', drive: '인버터', power: '전원·변압', relay: '릴레이', terminal: '단자·접지', misc: '부대 기기', unknown: '확인 필요' };
-const CONF = { ok: '라벨 확인', est: '추정', unk: '미식별' };
+const CONF = { ok: '라벨 확인', usr: '사용자 확인', est: '추정', unk: '미식별' };
 
 const EQUIP = [
 /* ── 차단기 ── */
@@ -599,6 +604,12 @@ const EQUIP = [
   spec: ['400V급 3상 · 3.0kW / 2.2kW 병기 라벨', '전면 커버 장착형 소형 프레임'],
   use: '소용량 3상 모터의 속도 제어.', ctx: '사진 10 · 12: 대형 인버터 오른쪽, 차단기 열 아래에 설치되어 있습니다.',
   terms: [['R/L1 · S/L2 · T/L3', '주전원 입력'], ['U/T1 · V/T2 · W/T3', '모터 출력'], ['제어단자 · 옵션', '커버 안쪽 — 사진상 확인 불가']], ph: [10, 12], ev: '사진 10 형명 라벨 "CIPR-GA70K4007ABMA-AAAABA 400V 3PHASE 3.0kW/2.2kW" 판독' },
+{ id: 'atv320', cat: 'drive', conf: 'usr', maker: 'Schneider Electric', model: 'ATV320U22N4C', name: 'Altivar Machine ATV320 인버터 400V 3상 2.2kW (컴팩트)', kind: 'AC 인버터 (VFD)',
+  spec: ['2.2kW (3HP) · 380~500V 3상 · 50/60Hz', '컴팩트형 · IP20 · 팬 냉각', 'EMC 필터 내장 (Class C2로 표기한 자료 있음)', 'Modbus 시리얼 · CANopen 기본, 옵션 통신 모듈 장착 가능', '안전 토크 오프(STO) 기능', '외형 약 184 × 140 × 158 mm (유통사 표기)'],
+  use: '3상 모터의 속도를 주파수로 제어하는 기계 제어용 인버터.',
+  ctx: '사진 17 하단에 일부만 촬영되었습니다. 녹색 다이얼, ESC 키, 표시창, QR 라벨이 Altivar Machine 제품 사진과 일치합니다. 설치 위치와 결선은 사진에 보이지 않습니다.',
+  terms: [['R/L1 · S/L2 · T/L3', '주전원 입력 (이 계열의 일반 명칭, 매뉴얼 확인)'], ['U/T1 · V/T2 · W/T3', '모터 출력'], ['PA/+ · PB', '제동저항 연결'], ['PC/−', 'DC 버스'], ['LI1 ~ LI6 · +24', '논리 입력 · 24V'], ['AI1 ~ AI3 · +10 · COM · AQ1', '아날로그 입출력'], ['R1A · R1B · R1C · R2A · R2C', '릴레이 출력'], ['STOA · STOB', '안전 토크 오프 입력']],
+  ph: [17], ev: '사용자가 형명을 알려 주었고, 사진 17 하단의 녹색 다이얼·ESC 키·QR 라벨이 제품 사진과 일치. 터미널 명칭은 이 계열의 일반 명칭이라 매뉴얼 확인이 필요함' },
 
 /* ── 전원·변압 ── */
 { id: 'trafo_iso', cat: 'power', conf: 'ok', maker: 'WYES (WOOYOUNG 표기)', model: '113-82', name: '절연 변압기 (Isolating Transformer)', kind: '절연 변압기',
@@ -637,6 +648,12 @@ const EQUIP = [
   spec: ['표기 24V · 10A 250V~ / 10A 30V=', '측면 심볼: 코일 + 접점 1개'],
   use: 'PLC·센서의 작은 신호로 부하 접점을 개폐하는 슬림 릴레이.', ctx: '사진 15: LA63Hd 오른쪽, 검정 소켓 위에 장착되어 있습니다.',
   terms: [['번호 판독 불가', '측면 심볼만 보임']], ph: [15], ev: '상면 "IOLINK · SHN12324" 판독, 릴레이로의 분류는 심볼 기반 추정' },
+{ id: 'sfc_r212', cat: 'relay', conf: 'usr', maker: 'Autonics', model: 'SFC-R212-R23-L', name: '안전 릴레이 유닛 (안전 입력 2채널 · 즉시 출력 2 + OFF-딜레이 출력 2)', kind: '안전 릴레이 (Safety Relay Unit)',
+  spec: ['전원 24VDC · 제품 라벨 기준 6.5W 이하 (Class 2)', '응답 시간 15ms 이하', '안전 출력 접점 240VAC 3A / 30VDC 3A (저항 부하, 라벨 표기)', '보조 출력 24VDC 0.1A 이하 (PNP, X1)', '즉시 출력 2점 + OFF-딜레이 출력 2점 (딜레이 최대 3s, 유통사 표기)', '-L 형명 = 푸시인(스크류리스) 단자', '표시: PWR · M1 · M2 · ERR · FB · OUT1 · OUT2 + OFF-DELAY 다이얼'],
+  use: '비상정지·도어 스위치 같은 안전 입력을 감시하고, 이상이 생기면 안전 출력 접점을 열어 접촉기·인버터 등 부하를 차단하는 안전 모듈.',
+  ctx: '사진 9 · 10: XGB PLC 랙 왼쪽에 설치되어 있습니다. 표시창 배치, OFF-DELAY 다이얼, 푸시인 단자 모양이 보내 주신 제품 사진과 일치합니다. 안전 입력과 출력에 어떤 기기가 연결되는지는 도면 확인이 필요합니다.',
+  terms: [['A1 · A2', '24VDC 전원 입력'], ['M11 · M12', '안전 입력 채널 1 (비상정지·도어 스위치 등)'], ['M21 · M22', '안전 입력 채널 2'], ['M51 · M52 · M53', '시작·피드백 계열 입력으로 보임 (추정, 매뉴얼 확인)'], ['X1', 'PNP 보조 출력 (24VDC 0.1A 이하)'], ['13 – 14 · 23 – 24', '즉시 출력 접점 2조'], ['37 – 38 · 47 – 48', 'OFF-딜레이 출력 접점 2조']],
+  ph: [10, 9, 12], ev: '사용자가 형명을 알려 주었고, 사진 9 · 10의 표시창·OFF-DELAY 다이얼·푸시인 단자가 제품 사진과 일치. 현장 사진에서는 형명 라벨이 읽히지 않음. 단자 번호는 제품 사진 인쇄 기준' },
 
 /* ── 단자·접지 ── */
 { id: 'tb_a', cat: 'terminal', conf: 'ok', maker: '미식별', model: 'TB-A', name: '모터·브레이크 중계 단자대 (2열 · 노란 마커)', kind: '터미널 블록 (TB)',
@@ -680,18 +697,10 @@ const EQUIP = [
   terms: [['번호 판독 불가', '박스 내부 접점']], ph: [10, 9], ev: '외형 기준' },
 
 /* ── 확인 필요 ── */
-{ id: 'u_safety', cat: 'unknown', conf: 'unk', maker: '미식별', model: '황색 모듈', name: '황색 하우징 안전 릴레이 (추정)', kind: '안전 릴레이 (추정)',
-  spec: ['표시창 PWR · M1 · M2 · FB · OUT1 · OUT2', 'OFF-DELAY 다이얼', '검은 푸시인 단자 다단'],
-  use: '비상정지·도어 스위치 같은 안전 입력을 감시해 출력을 차단하는 모듈(일반 용도).', ctx: '사진 9 · 10: XGB PLC 랙 왼쪽에 설치. 모델을 알려면 상단 라벨 사진이 필요합니다.',
-  terms: [['푸시인 단자', '번호 판독 불가 — 제조사 매뉴얼 확인']], ph: [10, 9, 12], ev: '제조사 로고·형명이 보이지 않음' },
 { id: 'u_alu', cat: 'unknown', conf: 'unk', maker: '미식별', model: '알루미늄 케이스', name: '알루미늄 방열 케이스 소자', kind: '미식별',
   spec: ['리브 형상의 알루미늄 외함', '상단 2개 나사 단자 + 취부 브래킷', '라벨 판독 불가'],
   use: '제동저항기 또는 판넬 히터로 보이나 라벨이 없어 단정할 수 없습니다.', ctx: '사진 4 확대, 사진 12: 외함 좌측 벽면에 세로로 설치되어 있고 상단에 하나가 놓여 있습니다.',
-  terms: [['상단 2단자', '번호 판독 불가']], ph: [4, 12], ev: '외형만 확인' },
-{ id: 'u_drive', cat: 'unknown', conf: 'unk', maker: '미식별', model: '검정 인버터', name: '검정 하우징 인버터 (일부 촬영)', kind: '인버터로 보임',
-  spec: ['녹색 다이얼 + ESC 버튼 + 7세그먼트 표시', 'QR 라벨'],
-  use: 'GA700 아래쪽에 있는 다른 제조사 인버터로 보이나 모델을 읽을 수 없습니다.', ctx: '사진 17 하단에 일부만 촬영되었습니다.',
-  terms: [['번호 판독 불가', '—']], ph: [17], ev: '키패드 형상만 확인' }
+  terms: [['상단 2단자', '번호 판독 불가']], ph: [4, 12], ev: '외형만 확인' }
 ];
 EQUIP.forEach(e => { e._hay = [e.id, e.model, e.full, e.name, e.maker, e.kind, e.use, e.ctx, CATS[e.cat], CONF[e.conf], ...e.spec, ...e.terms.flat()].join(' ').toLowerCase(); });
 
@@ -900,7 +909,7 @@ function cardHTML(e, i) {
   const open = cat.openAll || openSet.has(e.id);
   const tchips = e.terms.slice(0, 4).map(t => `<li class="t" title="${esc(t[0])}">${esc(t[0])}</li>`).join('') + (e.terms.length > 4 ? `<li class="t more">+${e.terms.length - 4}</li>` : '');
   return `<article class="card${open ? ' open' : ''}" id="c-${e.id}" data-id="${e.id}" style="--i:${i}">
-  <div class="media${img ? '' : ' noimg'}" data-media="${e.id}" title="원본 사진 보기">
+  <div class="media${img ? '' : ' noimg'}${mode === 'product' && prod ? ' prod' : ''}" data-media="${e.id}" title="원본 사진 보기">
     ${img ? `<img src="${esc(img)}" alt="${esc(e.model)} ${mode === 'product' ? '제품 사진' : '현장 사진'}" loading="lazy" data-fid="${e.id}" referrerpolicy="no-referrer">` : esc(e.model)}
     <span class="badge cat">${esc(CATS[e.cat])}</span><span class="badge conf ${e.conf}">${CONF[e.conf]}</span>
     ${prod ? `<span class="srcseg"><button data-src="${e.id}" data-m="field" aria-pressed="${mode === 'field'}">현장</button><button data-src="${e.id}" data-m="product" aria-pressed="${mode === 'product'}">제품</button></span>` : ''}
@@ -935,7 +944,7 @@ function cardHTML(e, i) {
 function renderCatalog() {
   renderChips();
   const q = cat.q.trim().toLowerCase();
-  const list = EQUIP.filter(e => (!cat.cats.size || cat.cats.has(e.cat)) && (!cat.onlyOk || e.conf === 'ok') && (!q || e._hay.includes(q)));
+  const list = EQUIP.filter(e => (!cat.cats.size || cat.cats.has(e.cat)) && (!cat.onlyOk || e.conf === 'ok' || e.conf === 'usr') && (!q || e._hay.includes(q)));
   const g = $('#catGrid'); g.classList.toggle('is-list', cat.view === 'list');
   g.innerHTML = list.length ? list.map(cardHTML).join('') : '<div class="empty">조건에 맞는 장비가 없습니다. 검색어나 분류를 바꿔 보세요.</div>';
   $('#catCount').textContent = `${list.length} / ${EQUIP.length}종`;
