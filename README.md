@@ -26,6 +26,10 @@
 
 단자 의미(예: `H`·`LL` 계통, `BP`·`BKN`)는 선번 패턴에서 추정한 것이므로 도면으로 확인해야 합니다.
 
+## Codex MCP 브릿지
+
+`tools/codex-mcp/`는 ChatGPT 계정으로 로그인한 Codex CLI를 Claude Code의 도구로 붙이는 MCP 서버입니다. 사용법은 [tools/codex-mcp/README.md](tools/codex-mcp/README.md)를 보세요.
+
 ## 구조와 빌드
 
 ```

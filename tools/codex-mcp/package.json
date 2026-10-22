@@ -1,0 +1,21 @@
+{
+  "name": "codex-mcp-bridge",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "MCP server that lets an MCP client (e.g. Claude Code) ask the OpenAI Codex CLI, signed in with a ChatGPT account",
+  "bin": {
+    "codex-mcp-bridge": "server.mjs"
+  },
+  "scripts": {
+    "start": "node server.mjs",
+    "test": "node test/smoke.mjs"
+  },
+  "engines": {
+    "node": ">=20"
+  },
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "1.32.1",
+    "zod": "4.6.7"
+  }
+}
