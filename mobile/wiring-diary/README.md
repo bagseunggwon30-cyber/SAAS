@@ -19,7 +19,7 @@
 | `src/ladder-sim.js` | 래더 시뮬레이터 (`anim` kind `ladder`). 엔진 클로저 안에 삽입됩니다. |
 | `src/ladder.css` | 시뮬레이터 스타일 |
 | `src/lessons-ladder.js` | 래더 입문 8강과 기존 래더 보정 |
-| `src/lessons-ladder-adv.js` | 래더 고급 8강 |
+| `src/lessons-ladder-adv.js` | 래더 고급 9강 (1강 병렬 회로) |
 | `build.mjs` | 원본에 위 파일을 끼워 넣어 `dist/index.html`을 만듭니다. 기준 문자열이 정확히 1번 있는지 검사합니다. |
 | `build-apk.sh`, `tools/` | 묶기·정렬 → v2 서명 |
 | `apk-template/` | 원본 APK의 매니페스트·dex·리소스 |
