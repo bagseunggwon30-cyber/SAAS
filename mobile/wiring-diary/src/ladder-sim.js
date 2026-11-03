@@ -11,7 +11,9 @@
     "chart":["P0000","T0000"], // 타임차트 (최대 4개)
     "monitor":false,           // 아래 디바이스 모니터 숨김
     "rh":70}                   // 줄 높이
-   요소: {"k":"a"|"b"|"p"|"n","l":"P0000","or":"P0020" 또는 {요소}}
+   요소: {"k":"a"|"b"|"p"|"n","l":"P0000"}   ("or":"P0020" 은 가지 2개짜리 병렬 블록으로 바뀜)
+         {"k":"par","paths":[[요소,요소],[요소],...]}  // 병렬 블록: 가지(직렬) 최대 4개 × 접점 4개, 가지끼리 OR
+         한 줄에 출력 요소를 여러 개 두면 병렬 출력(최대 4개, 위에서부터 차례로 실행)
          {"k":"cmp","op":">=","s1":"D0000","s2":"3"}
    출력: {"k":"coil"|"set"|"rst","l":"P0020"} {"k":"ton"|"tof","l":"T0000","v":30}(0.1초 단위)
          {"k":"ctu","l":"C0000","v":5} {"k":"mov","s":"1","d":"D0000"}
@@ -40,6 +42,14 @@ function ladStart(a){
 function ladEl(e,depth){
   if(typeof e==='string')e={k:'a',l:e};
   if(!e||typeof e!=='object')return null;
+  if(Array.isArray(e.par)||String(e.k).toLowerCase()==='par'){ // 병렬 블록: 가지(직렬 접점 목록) 최대 4개
+    if(depth)return null;
+    const src=Array.isArray(e.par)?e.par:e.paths;
+    const paths=(Array.isArray(src)?src:[]).slice(0,4).map(q=>(Array.isArray(q)?q:[q]).map(x=>ladEl(x,1)).filter(c=>c&&LAD_CON.has(c.k)).slice(0,4)).filter(q=>q.length);
+    if(!paths.length)return null;
+    if(paths.length===1&&paths[0].length===1)return paths[0][0];
+    return {k:'par',paths};
+  }
   let k=String(e.k||'a').toLowerCase();
   if(!LAD_OUT.has(k)&&!LAD_CON.has(k))k='a';
   const str=(v,n)=>v==null?'':String(v).trim().slice(0,n||10);
@@ -50,7 +60,7 @@ function ladEl(e,depth){
   if(k==='bsft'){o.s=str(e.s,10);o.e=str(e.e,10);o.l=o.s;o.bits=ladRange(o.s,o.e);o.p=!!e.p;}
   if(k==='cmp'){o.op=LAD_CMP.indexOf(e.op)>=0?e.op:'=';o.s1=str(e.s1,8);o.s2=str(e.s2,8);o.l='';}
   if(k==='ton'||k==='tof'||k==='ctu'||k==='tmr')o.v=clamp(Math.round(nz(e.v,10)),1,99999);
-  if(LAD_CON.has(k)&&!depth&&e.or!=null&&e.or!==''){const r=ladEl(e.or,1);if(r&&LAD_CON.has(r.k))o.or=r;}
+  if(LAD_CON.has(k)&&!depth&&e.or!=null&&e.or!==''){const r=ladEl(e.or,1);if(r&&LAD_CON.has(r.k))return {k:'par',paths:[[o],[r]]};} // 옛 형식 or
   return o;
 }
 const ladIsNum=x=>/^-?\d+$/.test(String(x));
@@ -75,17 +85,18 @@ function LADDER_ANIM(a,op){
   /* ----- 줄 정리 ----- */
   const rows=rowsIn.map(r=>{
     const els=r.map(e=>ladEl(e)).filter(Boolean);
-    const cons=els.filter(e=>LAD_CON.has(e.k)).slice(0,6);
-    const out=els.find(e=>LAD_OUT.has(e.k))||null;
-    return {cons,out,pw:[],pow:0};
+    const cons=els.filter(e=>LAD_CON.has(e.k)||e.k==='par').slice(0,6);
+    const outs=els.filter(e=>LAD_OUT.has(e.k)).slice(0,4);
+    return {cons,outs,pw:[],pow:0};
   });
   /* ----- 디바이스 분류 ----- */
   a.dv={};a.T={};a.C={};a.ext={};a.ph={};a.pv={};
   const written=new Set(),used=[],seen=new Set(),words=new Set(),wWritten=new Set();
   const use=n=>{if(n&&!ladIsNum(n)&&!seen.has(n)){seen.add(n);used.push(n);}};
+  const conList=r=>{const L2=[];r.cons.forEach(e=>{if(e.k==='par')e.paths.forEach(q=>q.forEach(c=>L2.push(c)));else L2.push(e);});return L2;};
   rows.forEach(r=>{
-    r.cons.forEach(e=>{[e,e.or].forEach(c=>{if(!c)return;if(c.k==='cmp'){use(c.s1);use(c.s2);[c.s1,c.s2].forEach(v=>{if(v&&!ladIsNum(v))words.add(v);});}else use(c.l);});});
-    const o=r.out;if(!o)return;
+    conList(r).forEach(c=>{if(c.k==='cmp'){use(c.s1);use(c.s2);[c.s1,c.s2].forEach(v=>{if(v&&!ladIsNum(v))words.add(v);});}else use(c.l);});
+    r.outs.forEach(o=>{
     use(o.l);
     if(o.k==='ton'||o.k==='tof'){if(!a.T[o.l])a.T[o.l]={acc:0,done:0,pre:o.v,k:o.k};}
     else if(o.k==='ctu'){if(!a.C[o.l])a.C[o.l]={cur:0,done:0,pre:o.v};}
@@ -95,8 +106,9 @@ function LADDER_ANIM(a,op){
     else if(o.k==='tmr'){if(!a.T[o.l])a.T[o.l]={acc:0,done:0,pre:o.v,k:'tmr'};}
     else if(o.k==='bsft'){o.bits.forEach(b=>{use(b);written.add(b);});}
     if(o.k!=='rst')written.add(o.l);
+    });
   });
-  rows.forEach(r=>{const o=r.out;if(o&&o.k==='rst'&&!a.T[o.l]&&!a.C[o.l]&&!words.has(o.l))written.add(o.l);});
+  rows.forEach(r=>r.outs.forEach(o=>{if(o.k==='rst'&&!a.T[o.l]&&!a.C[o.l]&&!words.has(o.l))written.add(o.l);}));
   used.forEach(n=>{if(/^D\d/i.test(n))words.add(n);});
   const isTC=n=>!!(a.T[n]||a.C[n]);
   const inputs=used.filter(n=>!written.has(n)&&!isTC(n)&&!words.has(n)&&!ladSys(n));
@@ -110,7 +122,7 @@ function LADDER_ANIM(a,op){
     used.forEach(n=>{a.dv[n]=0;a.pv[n]=0;a.ph[n]=0;});
     for(const n in a.T){a.T[n].acc=0;a.T[n].done=0;}
     for(const n in a.C){a.C[n].cur=0;a.C[n].done=0;}
-    rows.forEach(r=>{if(r.out)r.out.pp=0;});
+    rows.forEach(r=>r.outs.forEach(o=>{o.pp=0;}));
     inputs.forEach(n=>{a.ext[n]=init[n]?1:0;a.dv[n]=a.ext[n];a.pv[n]=a.ext[n];});
     for(const n in init){if(!inSet.has(n)&&!isTC(n)){a.dv[n]=Number(init[n])||0;a.ph[n]=a.dv[n]?1:0;}}
     used.forEach(n=>{if(ladSys(n)){a.dv[n]=1;a.pv[n]=1;}});
@@ -133,18 +145,21 @@ function LADDER_ANIM(a,op){
     }
     return 0;
   };
-  const coilRuns={};rows.forEach(r=>{if(r.out&&r.out.k==='coil')coilRuns[r.out.l]=(coilRuns[r.out.l]||0)+1;});
+  const coilRuns={};rows.forEach(r=>r.outs.forEach(o=>{if(o.k==='coil')coilRuns[o.l]=(coilRuns[o.l]||0)+1;}));
   a.runRung=(r,dt,now)=>{
     let p=1;r.pw=[];
-    r.cons.forEach(c=>{
-      const m=evalCon(c),o=c.or?evalCon(c.or):0;
-      c.st=m;if(c.or)c.or.st=o;
-      if(m&&(c.k==='p'||c.k==='n'))a.flash[c.l+c.k]=now;
-      if(o&&c.or&&(c.or.k==='p'||c.or.k==='n'))a.flash[c.or.l+c.or.k]=now;
-      p=p&&(m||o)?1:0;r.pw.push(p);
+    const ev=c=>{const v=evalCon(c);c.st=v;if(v&&(c.k==='p'||c.k==='n'))a.flash[c.l+c.k]=now;return v;};
+    r.cons.forEach(e=>{
+      if(e.k==='par'){const pin=p;let any=0;
+        e.pq=e.paths.map(q=>{let f=pin;return q.map(c=>{const v=ev(c);f=f&&v?1:0;return f;});});
+        e.pq.forEach(q=>{if(q[q.length-1])any=1;});p=any;}
+      else{const v=ev(e);p=p&&v?1:0;}
+      r.pw.push(p);
     });
     r.pow=p;
-    const o=r.out;if(!o)return;
+    r.outs.forEach(o=>a.runOut(o,p,dt));
+  };
+  a.runOut=(o,p,dt)=>{
     switch(o.k){
       case 'coil':a.dv[o.l]=p;break;
       case 'set':if(p)a.dv[o.l]=1;break;
@@ -217,9 +232,18 @@ function LADDER_ANIM(a,op){
   const hl=[];   // 접점 하이라이트 {el,fn}
   const fixed=[]; // 갱신할 글자 등 {fn}
   const contactW=c=>c.k==='cmp'?52:11;
-  // 줄 위치
+  // 줄 위치 — 병렬 가지·병렬 출력이 있으면 그 줄이 아래로 늘어난다
+  const parNamed=r=>r.cons.some(e=>e.k==='par'&&e.paths.some(q=>q.some(c=>names[c.l])));
   let yy=y0;
-  rows.forEach(r=>{const hasOr=r.cons.some(c=>c.or),nm=SHOWC&&r.cons.some(c=>c.or&&names[c.l]);r.top=yy;r.rh=hasOr?RH+(nm?70:50):RH;r.ym=yy+RH/2;r.yo=r.ym+(nm?72:60);yy+=r.rh;});
+  rows.forEach(r=>{
+    const lanes=Math.max(1,r.outs.length,...r.cons.map(e=>e.k==='par'?e.paths.length:1));
+    const nm=SHOWC&&(parNamed(r)||(r.outs.length>1&&r.outs.some(o=>names[o.l])));
+    const boxLanes=r.outs.length>1&&r.outs.some(o=>LAD_BOX.has(o.k));
+    r.gap=boxLanes?Math.max(nm?72:60,64):(nm?72:60);
+    r.top=yy;r.ym=yy+RH/2;r.rh=lanes>1?RH+(lanes-1)*r.gap-(boxLanes?0:nm?2:10):RH;
+    yy+=r.rh;
+  });
+  const laneY=(r,j)=>r.ym+j*r.gap;
   const H=yy-y0;
   // 모선
   pen.line(x0,y0,x0,y0+H,P({strokeWidth:3.6}));pen.line(x0+W,y0,x0+W,y0+H,P({strokeWidth:3.6}));
@@ -243,37 +267,11 @@ function LADDER_ANIM(a,op){
   };
   const hitFor=(n,x,y,w,h)=>{if(!n)return;anHit(gH,a,(inSet.has(n)?'in:':'dev:')+n,x,y,w,h);};
   a.pos={};
-  rows.forEach((r,ri)=>{
-    const out=r.out,box=out&&LAD_BOX.has(out.k);
-    const outW=out?(box?232:150):10;
-    const zl=x0+10,zr=x0+W-outW,n=r.cons.length,S=n?(zr-zl)/n:0;
-    let prevX=x0,prevFn=()=>1;
-    r.cons.forEach((c,i)=>{
-      const cx=zl+(i+.5)*S,hw=contactW(c),ym=r.ym;
-      const pin=prevFn;
-      if(c.or){
-        const ow=contactW(c.or),hs=Math.max(hw,ow)+25;
-        seg([[prevX,ym],[cx-hs,ym]],pin);
-        seg([[cx-hs,ym],[cx-hw,ym]],pin);
-        seg([[cx+hw,ym],[cx+hs,ym]],()=>pin()&&c.st);
-        seg([[cx-hs,ym],[cx-hs,r.yo],[cx-ow,r.yo]],pin);
-        seg([[cx+ow,r.yo],[cx+hs,r.yo],[cx+hs,ym]],()=>pin()&&c.or.st);
-        drawContact(c.or,cx,r.yo);
-        if(c.or.l){a.pos[c.or.l]=a.pos[c.or.l]||{x:cx,y:r.yo};hitFor(c.or.l,cx-30,r.yo-38,60,62);}
-        prevX=cx+hs;
-      }else{
-        seg([[prevX,ym],[cx-hw,ym]],pin);
-        prevX=cx+hw;
-      }
-      drawContact(c,cx,ym);
-      if(c.l){a.pos[c.l]=a.pos[c.l]||{x:cx,y:ym};hitFor(c.l,cx-30,ym-38,60,62);}
-      prevFn=()=>r.pw[i];
-    });
-    const powFn=()=>r.pow;
-    if(!out){seg([[prevX,r.ym],[x0+W,r.ym]],powFn);return;}
-    if(!box){
-      const cx=x0+W-75,ym=r.ym;
-      seg([[prevX,ym],[cx-17,ym]],powFn);
+  const place=(c,cx,y)=>{drawContact(c,cx,y);if(c.l){a.pos[c.l]=a.pos[c.l]||{x:cx,y};hitFor(c.l,cx-30,y-38,60,62);}};
+  const outLeft=o=>LAD_BOX.has(o.k)?x0+W-222:x0+W-92;
+  const drawOut=(r,out,ym)=>{
+    if(!LAD_BOX.has(out.k)){
+      const cx=x0+W-75;
       pen.line(cx+17,ym,x0+W,ym,P({strokeWidth:2.4}));
       const cc=s('circle',{cx,cy:ym,r:19,class:'lad-coil'});gHL.append(cc);
       pen.path('M'+f1(cx-6)+','+f1(ym-16)+' Q'+f1(cx-26)+','+ym+' '+f1(cx-6)+','+f1(ym+16),P({strokeWidth:2.8}));
@@ -287,42 +285,77 @@ function LADDER_ANIM(a,op){
       if(warn)hl.push({el:warn,cls:'lad-warn',fn:()=>{const bad=r.pow&&!a.bit(out.l)?1:0;if(bad&&!a.warned){a.warned=1;pop('⚠ 아래 줄이 '+out.l+'을(를) 덮어써요');}return bad;}});
       a.pos[out.l]=a.pos[out.l]||{x:cx,y:ym};
       hitFor(out.l,cx-30,ym-38,60,62);
-    }else{
-      const bx=x0+W-122,ym=r.ym,bw=200,bh=52;
-      seg([[prevX,ym],[bx-bw/2,ym]],powFn);
-      pen.line(bx+bw/2,ym,x0+W,ym,P({strokeWidth:2.4}));
-      pen.rect(bx-bw/2,ym-bh/2,bw,bh,P({strokeWidth:2.4,fill:'rgba(255,255,255,.5)'}));
-      const bhl=s('rect',{x:bx-bw/2+3,y:ym-bh/2+3,width:bw-6,height:bh-6,rx:5,class:'lad-box'});gHL.append(bhl);
-      const P1=out.p?'P':'';
-      const head=out.k==='mov'?('MOV'+P1+'  '+out.s+'  '+out.l):out.k==='calc'?(out.op+P1+' '+out.s1+' '+out.s2+' '+out.l)
-        :(out.k==='inc'||out.k==='dec')?(out.k.toUpperCase()+P1+'  '+out.l):out.k==='bsft'?('BSFT'+P1+' '+out.s+' '+out.e)
-        :(out.k.toUpperCase()+'  '+out.l+'  '+out.v);
-      lab(bx,ym-6,head,head.length>17?16:19,AN_INK,'middle','st');
-      if(out.k==='bsft'){
-        const n=out.bits.length,cw=Math.min(20,180/n),sx=bx-n*cw/2;const cells=[];
-        out.bits.forEach((b,i)=>{const c=s('rect',{x:f1(sx+i*cw+1),y:ym+5,width:f1(cw-2),height:13,rx:2,class:'lad-bit'});gUI.append(c);cells.push({c,b});});
-        fixed.push({fn:()=>cells.forEach(o=>setCls(o.c,'lad-bit',!!a.dv[o.b]))});
-        hl.push({el:bhl,fn:()=>r.pow});
-      }else if(out.k==='ton'||out.k==='tof'||out.k==='tmr'){
-        const T=a.T[out.l];
-        gUI.append(s('rect',{x:bx-88,y:ym+6,width:120,height:10,rx:4,class:'lad-bar0'}));
-        const bar=s('rect',{x:bx-88,y:ym+6,width:0,height:10,rx:4,class:'lad-bar'});gUI.append(bar);
-        const rd=lab(bx+40,ym+17,'',15,'#1f5fbf','start','st');
-        fixed.push({fn:()=>{const pt=out.v*100,f=clamp(T.acc/pt,0,1);bar.setAttribute('width',f1(120*f));
-          rd.textContent=out.k!=='tof'?ladFmtT(T.acc)+'/'+ladFmtT(pt)+'s':(T.done&&!T.run?'ON':ladFmtT(T.acc)+'/'+ladFmtT(pt)+'s');}});
-        hl.push({el:bhl,fn:()=>T.done});
-      }else if(out.k==='ctu'){
-        const C=a.C[out.l];const rd=lab(bx,ym+19,'',17,'#1f5fbf','middle','st');
-        fixed.push({fn:()=>{rd.textContent='현재값 '+C.cur+' / '+out.v;}});
-        hl.push({el:bhl,fn:()=>C.done});
-      }else{
-        const rd=lab(bx,ym+19,'',16,'#1f5fbf','middle','st');
-        fixed.push({fn:()=>{rd.textContent=out.l+' = '+a.word(out.l);}});
-        hl.push({el:bhl,fn:()=>r.pow});
-      }
-      a.pos[out.l]=a.pos[out.l]||{x:bx,y:ym};
-      hitFor(out.l,bx-bw/2,ym-bh/2,bw,bh);
+      return;
     }
+    const bx=x0+W-122,bw=200,bh=52;
+    pen.line(bx+bw/2,ym,x0+W,ym,P({strokeWidth:2.4}));
+    pen.rect(bx-bw/2,ym-bh/2,bw,bh,P({strokeWidth:2.4,fill:'rgba(255,255,255,.5)'}));
+    const bhl=s('rect',{x:bx-bw/2+3,y:ym-bh/2+3,width:bw-6,height:bh-6,rx:5,class:'lad-box'});gHL.append(bhl);
+    const P1=out.p?'P':'';
+    const head=out.k==='mov'?('MOV'+P1+'  '+out.s+'  '+out.l):out.k==='calc'?(out.op+P1+' '+out.s1+' '+out.s2+' '+out.l)
+      :(out.k==='inc'||out.k==='dec')?(out.k.toUpperCase()+P1+'  '+out.l):out.k==='bsft'?('BSFT'+P1+' '+out.s+' '+out.e)
+      :(out.k.toUpperCase()+'  '+out.l+'  '+out.v);
+    lab(bx,ym-6,head,head.length>17?16:19,AN_INK,'middle','st');
+    if(out.k==='bsft'){
+      const n=out.bits.length,cw=Math.min(20,180/n),sx=bx-n*cw/2;const cells=[];
+      out.bits.forEach((b,i)=>{const c=s('rect',{x:f1(sx+i*cw+1),y:ym+5,width:f1(cw-2),height:13,rx:2,class:'lad-bit'});gUI.append(c);cells.push({c,b});});
+      fixed.push({fn:()=>cells.forEach(o=>setCls(o.c,'lad-bit',!!a.dv[o.b]))});
+      hl.push({el:bhl,fn:()=>r.pow});
+    }else if(out.k==='ton'||out.k==='tof'||out.k==='tmr'){
+      const T=a.T[out.l];
+      gUI.append(s('rect',{x:bx-88,y:ym+6,width:120,height:10,rx:4,class:'lad-bar0'}));
+      const bar=s('rect',{x:bx-88,y:ym+6,width:0,height:10,rx:4,class:'lad-bar'});gUI.append(bar);
+      const rd=lab(bx+40,ym+17,'',15,'#1f5fbf','start','st');
+      fixed.push({fn:()=>{const pt=out.v*100,f=clamp(T.acc/pt,0,1);bar.setAttribute('width',f1(120*f));
+        rd.textContent=out.k!=='tof'?ladFmtT(T.acc)+'/'+ladFmtT(pt)+'s':(T.done&&!T.run?'ON':ladFmtT(T.acc)+'/'+ladFmtT(pt)+'s');}});
+      hl.push({el:bhl,fn:()=>T.done});
+    }else if(out.k==='ctu'){
+      const C=a.C[out.l];const rd=lab(bx,ym+19,'',17,'#1f5fbf','middle','st');
+      fixed.push({fn:()=>{rd.textContent='현재값 '+C.cur+' / '+out.v;}});
+      hl.push({el:bhl,fn:()=>C.done});
+    }else{
+      const rd=lab(bx,ym+19,'',16,'#1f5fbf','middle','st');
+      fixed.push({fn:()=>{rd.textContent=out.l+' = '+a.word(out.l);}});
+      hl.push({el:bhl,fn:()=>r.pow});
+    }
+    a.pos[out.l]=a.pos[out.l]||{x:bx,y:ym};
+    hitFor(out.l,bx-bw/2,ym-bh/2,bw,bh);
+  };
+  rows.forEach(r=>{
+    const hasBox=r.outs.some(o=>LAD_BOX.has(o.k));
+    const outW=r.outs.length?(hasBox?236:150):10;
+    const zl=x0+10,zr=x0+W-outW;
+    const units=e=>e.k==='par'?Math.max(...e.paths.map(q=>q.length)):1;
+    const U=r.cons.reduce((n,e)=>n+units(e),0),S=U?(zr-zl)/U:0,ym=r.ym;
+    let prevX=x0,prevFn=()=>1,uc=0;
+    r.cons.forEach((e,i)=>{
+      const pin=prevFn;
+      if(e.k!=='par'){
+        const cx=zl+(uc+.5)*S,hw=contactW(e);
+        seg([[prevX,ym],[cx-hw,ym]],pin);place(e,cx,ym);prevX=cx+hw;uc+=1;
+      }else{
+        const u=units(e),colX=k=>zl+(uc+k+.5)*S;
+        const hwL=Math.max(...e.paths.map(q=>contactW(q[0]))),hwR=Math.max(...e.paths.filter(q=>q.length===u).map(q=>contactW(q[u-1])));
+        const xL=colX(0)-hwL-25,xR=colX(u-1)+hwR+25;
+        seg([[prevX,ym],[xL,ym]],pin);
+        e.paths.forEach((q,j)=>{
+          const y=laneY(r,j);
+          if(j>0)seg([[xL,laneY(r,j-1)],[xL,y]],pin);
+          let px=xL,pf=pin;
+          q.forEach((c,k)=>{const cx=colX(k),hw=contactW(c);seg([[px,y],[cx-hw,y]],pf);place(c,cx,y);px=cx+hw;pf=()=>e.pq&&e.pq[j][k];});
+          seg([[px,y],[xR,y]],pf);
+        });
+        for(let j=e.paths.length-1;j>0;j--){const jj=j;seg([[xR,laneY(r,j)],[xR,laneY(r,j-1)]],()=>e.pq&&e.pq.slice(jj).some(q=>q[q.length-1]));}
+        prevX=xR;uc+=u;
+      }
+      prevFn=()=>r.pw[i];
+    });
+    const powFn=()=>r.pow;
+    if(!r.outs.length){seg([[prevX,ym],[x0+W,ym]],powFn);return;}
+    if(r.outs.length===1){seg([[prevX,ym],[outLeft(r.outs[0]),ym]],powFn);drawOut(r,r.outs[0],ym);return;}
+    const xJ=Math.min(...r.outs.map(outLeft))-14; // 병렬 출력 분기점
+    seg([[prevX,ym],[xJ,ym]],powFn);
+    r.outs.forEach((o,j)=>{const y=laneY(r,j);if(j>0)seg([[xJ,laneY(r,j-1)],[xJ,y]],powFn);seg([[xJ,y],[outLeft(o),y]],powFn);drawOut(r,o,y);});
   });
   /* ----- 스캔 커서 ----- */
   const cur=s('rect',{x:x0+3,y:y0,width:W-6,height:RH,rx:8,class:'lad-cur'});gCur.append(cur);
