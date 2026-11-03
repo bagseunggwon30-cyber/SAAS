@@ -18,9 +18,9 @@
    act: {"t":"act","id":"LD1","do":"press"|"release"|"tap"|"on"|"off"|"toggle"|"slow"|"fast"|"reset","value":"P0000"}
 */
 const LAD={timer:0,list:new Set(),blur:false};
-const LAD_OUT=new Set(['coil','set','rst','ton','tof','ctu','mov']);
+const LAD_OUT=new Set(['coil','set','rst','ton','tof','ctu','mov','calc','inc','dec','tmr','bsft']);
 const LAD_CON=new Set(['a','b','p','n','cmp']);
-const LAD_BOX=new Set(['ton','tof','ctu','mov']);
+const LAD_BOX=new Set(['ton','tof','ctu','mov','calc','inc','dec','tmr','bsft']);
 const LAD_CMP=['=','<>','>','<','>=','<='];
 const LAD_GREEN='#1f9d55';
 function ladTickAll(){
@@ -44,13 +44,24 @@ function ladEl(e,depth){
   if(!LAD_OUT.has(k)&&!LAD_CON.has(k))k='a';
   const str=(v,n)=>v==null?'':String(v).trim().slice(0,n||10);
   const o={k,l:str(e.l,10)};
-  if(k==='mov'){o.s=str(e.s,8)||'0';o.l=str(e.d||e.l,10);}
+  if(k==='mov'){o.s=str(e.s,8)||'0';o.l=str(e.d||e.l,10);o.p=!!e.p;}
+  if(k==='calc'){const up=String(e.op||'ADD').toUpperCase();o.op=['ADD','SUB','MUL','DIV'].indexOf(up)>=0?up:'ADD';o.s1=str(e.s1,8)||'0';o.s2=str(e.s2,8)||'0';o.l=str(e.d||e.l,10);o.p=!!e.p;}
+  if(k==='inc'||k==='dec')o.p=!!e.p;
+  if(k==='bsft'){o.s=str(e.s,10);o.e=str(e.e,10);o.l=o.s;o.bits=ladRange(o.s,o.e);o.p=!!e.p;}
   if(k==='cmp'){o.op=LAD_CMP.indexOf(e.op)>=0?e.op:'=';o.s1=str(e.s1,8);o.s2=str(e.s2,8);o.l='';}
-  if(k==='ton'||k==='tof'||k==='ctu')o.v=clamp(Math.round(nz(e.v,10)),1,99999);
+  if(k==='ton'||k==='tof'||k==='ctu'||k==='tmr')o.v=clamp(Math.round(nz(e.v,10)),1,99999);
   if(LAD_CON.has(k)&&!depth&&e.or!=null&&e.or!==''){const r=ladEl(e.or,1);if(r&&LAD_CON.has(r.k))o.or=r;}
   return o;
 }
 const ladIsNum=x=>/^-?\d+$/.test(String(x));
+const ladW16=v=>((v+32768)%65536+65536)%65536-32768; // 16비트 부호 있는 정수로 넘침
+const ladSys=n=>typeof n==='string'&&n.charAt(0)==='_'; // _ON 같은 시스템 플래그(상시 ON)
+function ladRange(s,e){ // M0000~M0007 → 비트 목록 (같은 워드 안, 마지막 자리 16진)
+  const re=/^([A-Z]+)(\d{3})([0-9A-F])$/i,m1=re.exec(s||''),m2=re.exec(e||'');
+  if(!m1||!m2||m1[1].toUpperCase()!==m2[1].toUpperCase()||m1[2]!==m2[2])return [s];
+  const p=parseInt(m1[3],16),q=parseInt(m2[3],16);if(q<p)return [s];
+  const out=[];for(let i=p;i<=q;i++)out.push(m1[1].toUpperCase()+m1[2]+i.toString(16).toUpperCase());return out;
+}
 const ladFmtT=ms=>(Math.round(ms/100)/10).toFixed(1);
 
 function LADDER_ANIM(a,op){
@@ -70,7 +81,7 @@ function LADDER_ANIM(a,op){
   });
   /* ----- 디바이스 분류 ----- */
   a.dv={};a.T={};a.C={};a.ext={};a.ph={};a.pv={};
-  const written=new Set(),used=[],seen=new Set(),words=new Set();
+  const written=new Set(),used=[],seen=new Set(),words=new Set(),wWritten=new Set();
   const use=n=>{if(n&&!ladIsNum(n)&&!seen.has(n)){seen.add(n);used.push(n);}};
   rows.forEach(r=>{
     r.cons.forEach(e=>{[e,e.or].forEach(c=>{if(!c)return;if(c.k==='cmp'){use(c.s1);use(c.s2);[c.s1,c.s2].forEach(v=>{if(v&&!ladIsNum(v))words.add(v);});}else use(c.l);});});
@@ -78,13 +89,19 @@ function LADDER_ANIM(a,op){
     use(o.l);
     if(o.k==='ton'||o.k==='tof'){if(!a.T[o.l])a.T[o.l]={acc:0,done:0,pre:o.v,k:o.k};}
     else if(o.k==='ctu'){if(!a.C[o.l])a.C[o.l]={cur:0,done:0,pre:o.v};}
-    else if(o.k==='mov'){words.add(o.l);if(o.s&&!ladIsNum(o.s)){use(o.s);words.add(o.s);}}
+    else if(o.k==='mov'){words.add(o.l);wWritten.add(o.l);if(o.s&&!ladIsNum(o.s)){use(o.s);words.add(o.s);}}
+    else if(o.k==='calc'){words.add(o.l);wWritten.add(o.l);[o.s1,o.s2].forEach(v=>{if(v&&!ladIsNum(v)){use(v);words.add(v);}});}
+    else if(o.k==='inc'||o.k==='dec'){words.add(o.l);wWritten.add(o.l);}
+    else if(o.k==='tmr'){if(!a.T[o.l])a.T[o.l]={acc:0,done:0,pre:o.v,k:'tmr'};}
+    else if(o.k==='bsft'){o.bits.forEach(b=>{use(b);written.add(b);});}
     if(o.k!=='rst')written.add(o.l);
   });
   rows.forEach(r=>{const o=r.out;if(o&&o.k==='rst'&&!a.T[o.l]&&!a.C[o.l]&&!words.has(o.l))written.add(o.l);});
   used.forEach(n=>{if(/^D\d/i.test(n))words.add(n);});
   const isTC=n=>!!(a.T[n]||a.C[n]);
-  const inputs=used.filter(n=>!written.has(n)&&!isTC(n)&&!words.has(n));
+  const inputs=used.filter(n=>!written.has(n)&&!isTC(n)&&!words.has(n)&&!ladSys(n));
+  const ain=(op.ain&&typeof op.ain==='object')?op.ain:{};
+  const ainList=Object.keys(ain).filter(n=>seen.has(n)&&!wWritten.has(n));a.wext={};
   const inSet=new Set(inputs);
   const init=(op.init&&typeof op.init==='object')?op.init:{};
   const pbList=Array.isArray(op.pb)?op.pb.map(String):null;
@@ -96,11 +113,14 @@ function LADDER_ANIM(a,op){
     rows.forEach(r=>{if(r.out)r.out.pp=0;});
     inputs.forEach(n=>{a.ext[n]=init[n]?1:0;a.dv[n]=a.ext[n];a.pv[n]=a.ext[n];});
     for(const n in init){if(!inSet.has(n)&&!isTC(n)){a.dv[n]=Number(init[n])||0;a.ph[n]=a.dv[n]?1:0;}}
+    used.forEach(n=>{if(ladSys(n)){a.dv[n]=1;a.pv[n]=1;}});
+    ainList.forEach(n=>{const c=ain[n]||{};a.wext[n]=clamp(Math.round(nz(c.init,nz(c.min,0))),nz(c.min,-32768),nz(c.max,32767));a.dv[n]=a.wext[n];});
+    a.err=0;
     a.pressed={};a.flash={};a.hist=[];a.histT=0;a.relQ={};a.pressRead={};a.readNo=a.readNo||0;
   };
   a.reset();
   /* ----- 값 읽기 ----- */
-  a.bit=n=>{const T=a.T[n];if(T)return T.done?1:0;const C=a.C[n];if(C)return C.done?1:0;return a.dv[n]?1:0;};
+  a.bit=n=>{if(ladSys(n))return 1;const T=a.T[n];if(T)return T.done?1:0;const C=a.C[n];if(C)return C.done?1:0;return a.dv[n]?1:0;};
   a.word=n=>{if(ladIsNum(n))return parseInt(n,10);const T=a.T[n];if(T)return Math.floor(T.acc/100);const C=a.C[n];if(C)return C.cur;return a.dv[n]|0;};
   const evalCon=c=>{
     switch(c.k){
@@ -132,11 +152,18 @@ function LADDER_ANIM(a,op){
       case 'ton':{const T=a.T[o.l],pt=o.v*100;if(p){T.acc=Math.min(T.acc+dt,pt);T.done=T.acc>=pt?1:0;}else{T.acc=0;T.done=0;}break;}
       case 'tof':{const T=a.T[o.l],pt=o.v*100;if(p){T.done=1;T.acc=0;T.run=0;}else if(T.done){T.run=1;T.acc=Math.min(T.acc+dt,pt);if(T.acc>=pt){T.done=0;T.run=0;}}else T.run=0;break;}
       case 'ctu':{const C=a.C[o.l];if(p&&!o.pp)C.cur=Math.min(C.cur+1,99999);C.done=C.cur>=o.v?1:0;o.pp=p;break;}
-      case 'mov':if(p)a.dv[o.l]=a.word(o.s);break;
+      case 'mov':if(o.p?(p&&!o.pp):p)a.dv[o.l]=a.word(o.s);o.pp=p;break;
+      case 'calc':if(o.p?(p&&!o.pp):p){const x=a.word(o.s1),y=a.word(o.s2);let v=null;
+        if(o.op==='ADD')v=ladW16(x+y);else if(o.op==='SUB')v=ladW16(x-y);else if(o.op==='MUL')v=x*y;
+        else if(y!==0)v=Math.trunc(x/y);else if(!a.err){a.err=1;pop('÷0 : 연산 에러(_ERR) — 결과를 안 써요');}
+        if(v!==null)a.dv[o.l]=v;}o.pp=p;break;
+      case 'inc':case 'dec':if(o.p?(p&&!o.pp):p)a.dv[o.l]=ladW16((a.dv[o.l]|0)+(o.k==='inc'?1:-1));o.pp=p;break;
+      case 'tmr':{const T=a.T[o.l],pt=o.v*100;if(p)T.acc=Math.min(T.acc+dt,pt);T.done=T.acc>=pt?1:0;break;}
+      case 'bsft':if(o.p?(p&&!o.pp):p){const b=o.bits;for(let i=b.length-1;i>0;i--)a.dv[b[i]]=a.dv[b[i-1]]?1:0;a.dv[b[0]]=0;}o.pp=p;break;
     }
   };
   // 짧은 탭도 최소 한 번은 읽히게: 누른 뒤 아직 입력 읽기가 없었으면 떼기를 다음 읽기 뒤로 미룬다
-  const readInputs=()=>{inputs.forEach(n=>{a.dv[n]=a.ext[n]?1:0;if(a.relQ[n]){a.relQ[n]=0;a.ext[n]=init[n]?1:0;}});a.readNo++;};
+  const readInputs=()=>{inputs.forEach(n=>{a.dv[n]=a.ext[n]?1:0;if(a.relQ[n]){a.relQ[n]=0;a.ext[n]=init[n]?1:0;}});ainList.forEach(n=>{a.dv[n]=a.wext[n];});a.readNo++;};
   const writeOutputs=()=>{written.forEach(n=>{a.ph[n]=a.bit(n);});used.forEach(n=>{a.pv[n]=a.bit(n);});};
   /* ----- 스캔 ----- */
   a.slow=op.scan==='slow';a.last=performance.now();a.scanT0=a.last;
@@ -266,15 +293,23 @@ function LADDER_ANIM(a,op){
       pen.line(bx+bw/2,ym,x0+W,ym,P({strokeWidth:2.4}));
       pen.rect(bx-bw/2,ym-bh/2,bw,bh,P({strokeWidth:2.4,fill:'rgba(255,255,255,.5)'}));
       const bhl=s('rect',{x:bx-bw/2+3,y:ym-bh/2+3,width:bw-6,height:bh-6,rx:5,class:'lad-box'});gHL.append(bhl);
-      const head=out.k==='mov'?('MOV  '+out.s+'  '+out.l):(out.k.toUpperCase()+'  '+out.l+'  '+out.v);
-      lab(bx,ym-6,head,19,AN_INK,'middle','st');
-      if(out.k==='ton'||out.k==='tof'){
+      const P1=out.p?'P':'';
+      const head=out.k==='mov'?('MOV'+P1+'  '+out.s+'  '+out.l):out.k==='calc'?(out.op+P1+' '+out.s1+' '+out.s2+' '+out.l)
+        :(out.k==='inc'||out.k==='dec')?(out.k.toUpperCase()+P1+'  '+out.l):out.k==='bsft'?('BSFT'+P1+' '+out.s+' '+out.e)
+        :(out.k.toUpperCase()+'  '+out.l+'  '+out.v);
+      lab(bx,ym-6,head,head.length>17?16:19,AN_INK,'middle','st');
+      if(out.k==='bsft'){
+        const n=out.bits.length,cw=Math.min(20,180/n),sx=bx-n*cw/2;const cells=[];
+        out.bits.forEach((b,i)=>{const c=s('rect',{x:f1(sx+i*cw+1),y:ym+5,width:f1(cw-2),height:13,rx:2,class:'lad-bit'});gUI.append(c);cells.push({c,b});});
+        fixed.push({fn:()=>cells.forEach(o=>setCls(o.c,'lad-bit',!!a.dv[o.b]))});
+        hl.push({el:bhl,fn:()=>r.pow});
+      }else if(out.k==='ton'||out.k==='tof'||out.k==='tmr'){
         const T=a.T[out.l];
         gUI.append(s('rect',{x:bx-88,y:ym+6,width:120,height:10,rx:4,class:'lad-bar0'}));
         const bar=s('rect',{x:bx-88,y:ym+6,width:0,height:10,rx:4,class:'lad-bar'});gUI.append(bar);
         const rd=lab(bx+40,ym+17,'',15,'#1f5fbf','start','st');
         fixed.push({fn:()=>{const pt=out.v*100,f=clamp(T.acc/pt,0,1);bar.setAttribute('width',f1(120*f));
-          rd.textContent=out.k==='ton'?ladFmtT(T.acc)+'/'+ladFmtT(pt)+'s':(T.done&&!T.run?'ON':ladFmtT(T.acc)+'/'+ladFmtT(pt)+'s');}});
+          rd.textContent=out.k!=='tof'?ladFmtT(T.acc)+'/'+ladFmtT(pt)+'s':(T.done&&!T.run?'ON':ladFmtT(T.acc)+'/'+ladFmtT(pt)+'s');}});
         hl.push({el:bhl,fn:()=>T.done});
       }else if(out.k==='ctu'){
         const C=a.C[out.l];const rd=lab(bx,ym+19,'',17,'#1f5fbf','middle','st');
@@ -315,12 +350,13 @@ function LADDER_ANIM(a,op){
   const mon=[];
   if(!legacy&&op.monitor!==false){
     let mx=x0,my=y0+H+38;
-    const order=inputs.concat(used.filter(n=>!inSet.has(n)&&!isTC(n)&&!words.has(n)),Object.keys(a.T),Object.keys(a.C),used.filter(n=>words.has(n)&&!isTC(n)));
+    const order=(Array.isArray(op.monitor)?op.monitor.map(String).filter(n=>seen.has(n)):
+      inputs.concat(ainList,used.filter(n=>!inSet.has(n)&&!isTC(n)&&!words.has(n)),Object.keys(a.T),Object.keys(a.C),used.filter(n=>words.has(n)&&!isTC(n)&&ainList.indexOf(n)<0))).filter(n=>!ladSys(n));
     const ml=s('text',{x:x0,y:my-21,class:'lad-mt','text-anchor':'start'},'디바이스 모니터  (● = 실제 LED/값)');gUI.append(ml);
     order.forEach(n=>{
-      const kind=inSet.has(n)?'in':a.T[n]?'t':a.C[n]?'c':words.has(n)?'d':(written.has(n)&&!/^[MKLF]\d/i.test(n))?'out':'m';
-      const nm0=(kind==='in'||kind==='out')&&names[n]?String(names[n]):'',nm=nm0.length<=6?nm0:nm0.split(/[\s(]/)[0].slice(0,6);
-      const w=kind==='t'?150:kind==='d'||kind==='c'?126:Math.max(104,52+(n.length+(nm?1:0))*8.2+nm.length*13);
+      const kind=inSet.has(n)?'in':ainList.indexOf(n)>=0?'ai':a.T[n]?'t':a.C[n]?'c':words.has(n)?'d':(written.has(n)&&!/^[MKLF]\d/i.test(n))?'out':'m';
+      const nm0=(kind==='in'||kind==='out'||kind==='ai')&&names[n]?String(names[n]):'',nm=nm0.length<=6?nm0:nm0.split(/[\s(]/)[0].slice(0,6);
+      const w=kind==='ai'?Math.max(290,210+nm.length*13):kind==='t'?150:kind==='d'||kind==='c'?126:Math.max(104,52+(n.length+(nm?1:0))*8.2+nm.length*13);
       if(mx+w>x0+W+60){mx=x0;my+=36;}
       const g=s('g');gUI.append(g);
       const r=s('rect',{x:mx,y:my-14,width:w-6,height:28,rx:8,class:'lad-mon '+kind});
@@ -328,6 +364,13 @@ function LADDER_ANIM(a,op){
       const t=s('text',{x:mx+24,y:my+5,class:'lad-mtx','text-anchor':'start'});
       g.append(r,led,t);
       if(kind==='in')anHit(gH,a,'in:'+n,mx,my-16,w-6,32);
+      if(kind==='ai'){
+        [['−',w-104,'ai-:'],['+',w-56,'ai+:']].forEach(q=>{const bx2=mx+q[1];
+          g.append(s('rect',{x:bx2,y:my-13,width:44,height:26,rx:7,class:'lad-chip on'}));
+          const tt=s('text',{x:bx2+22,y:my+7,class:'lad-cht','text-anchor':'middle'},q[0]);tt.style.fontSize='20px';g.append(tt);
+          anHit(gH,a,q[2]+n,bx2-3,my-20,50,40);});
+        a.pos['ai:'+n]={x:mx+w-34,y:my};
+      }
       mon.push({n,kind,led,t,nm});
       mx+=w;
     });
@@ -371,6 +414,7 @@ function LADDER_ANIM(a,op){
       else if(m.kind==='out'){on=a.ph[m.n];txt=m.n+(m.nm?' '+m.nm:'');}
       else if(m.kind==='m'){on=a.bit(m.n);}
       else if(m.kind==='t'){const T=a.T[m.n];on=T.done;txt=m.n+' '+ladFmtT(T.acc)+'s';}
+      else if(m.kind==='ai'){on=a.wext[m.n]>0;txt=m.n+(m.nm?' '+m.nm:'')+' = '+a.wext[m.n];}
       else if(m.kind==='c'){const C=a.C[m.n];on=C.done;txt=m.n+' = '+C.cur;}
       else{on=a.word(m.n)?1:0;txt=m.n+' = '+a.word(m.n);}
       if(m.t.textContent!==txt)m.t.textContent=txt;
@@ -389,7 +433,7 @@ function LADDER_ANIM(a,op){
     }
   };
   /* ----- 조작 ----- */
-  const tip=n=>{const p=a.pos[n];if(p)simPopXY(p.x-40,p.y-62,n+(a.T[n]?' 타이머: 프로그램이 시간을 세요':a.C[n]?' 카운터: 프로그램이 세요':' 은(는) 프로그램이 정해요'));};
+  const tip=n=>{const p=a.pos[n];if(p)simPopXY(p.x-40,p.y-62,n+(ladSys(n)?' 상시 ON 플래그':a.T[n]?' 타이머: 프로그램이 시간을 세요':a.C[n]?' 카운터: 프로그램이 세요':' 은(는) 프로그램이 정해요'));};
   a.press=(n,how)=>{
     if(!inSet.has(n)){tip(n);return;}
     const base=init[n]?1:0;
@@ -405,15 +449,20 @@ function LADDER_ANIM(a,op){
     if(part==='mode'){a.setSlow(!a.slow);return;}
     if(part==='reset'){a.reset();a.warned=0;pop('↺ 모두 처음 상태로');a.draw(performance.now());return;}
     if(part.slice(0,3)==='in:'){a.press(part.slice(3),'auto');return;}
+    if(part.slice(0,4)==='ai+:'||part.slice(0,4)==='ai-:'){a.adj(part.slice(4),part.charAt(2)==='+'?1:-1);return;}
     if(part.slice(0,4)==='dev:'){tip(part.slice(4));return;}
     if(inputs.length){a.press(inputs[0],'auto');}
   };
+  a.adj=(n,dir,abs)=>{const c=ain[n];if(!c||ainList.indexOf(n)<0)return;const mn=nz(c.min,0),mx=nz(c.max,16000),st=nz(c.step,Math.max(1,Math.round((mx-mn)/10)));
+    a.wext[n]=clamp(abs!=null?Math.round(abs):a.wext[n]+dir*st,mn,mx);a.draw(performance.now());};
   a.release=part=>{part=String(part||'');if(part.slice(0,3)==='in:'){const n=part.slice(3);if(a.pressed[n])a.press(n,'release');}};
   a.releaseAll=()=>{for(const n in a.pressed)if(a.pressed[n])a.press(n,'release');};
   a.act=(d,val)=>{
     d=String(d||'toggle');const n=val!=null?String(val):inputs[0];
     if(d==='slow'||d==='fast'){a.setSlow(d==='slow');return;}
     if(d==='reset'){a.reset();a.warned=0;a.draw(performance.now());return;}
+    if(d==='set'){const m=/^(.+?)=(-?\d+)$/.exec(String(val||''));if(m)a.adj(m[1],0,parseInt(m[2],10));return;}
+    if(d==='up'||d==='down'){a.adj(n,d==='up'?1:-1);return;}
     if(d==='tap'){a.press(n,'press');setTimeout(()=>{if(a.pressed[n])a.press(n,'release');},a.slow?Math.max(600,phaseDur('in')*(rows.length+2)):600);return;}
     if(d==='press'||d==='release'||d==='on'||d==='off')a.press(n,d);
     else a.press(n,'toggle');
@@ -421,11 +470,12 @@ function LADDER_ANIM(a,op){
   a.fingerAt=(d,val)=>{
     if((d==='slow'||d==='fast')&&a.posMode)return a.posMode;
     if(d==='reset'&&a.posReset)return a.posReset;
+    if(d==='set'||d==='up'||d==='down'){const m=String(val||'').split('=')[0];const q=a.pos['ai:'+m];if(q)return q;}
     const n=val!=null?String(val):inputs[0];const p=a.pos[n];
     return p?{x:p.x,y:p.y}:{x:x0+W/2,y:y0+H/2};
   };
   a.render=()=>{};
-  a.state=()=>({dv:Object.assign({},a.dv),ph:Object.assign({},a.ph),ext:Object.assign({},a.ext),T:JSON.parse(JSON.stringify(a.T)),C:JSON.parse(JSON.stringify(a.C)),slow:a.slow,phase:a.phase.k,scanNo:a.scanNo});
+  a.state=()=>({err:a.err,wext:Object.assign({},a.wext),dv:Object.assign({},a.dv),ph:Object.assign({},a.ph),ext:Object.assign({},a.ext),T:JSON.parse(JSON.stringify(a.T)),C:JSON.parse(JSON.stringify(a.C)),slow:a.slow,phase:a.phase.k,scanNo:a.scanNo});
   if(a.slow)a.enterPhase('in',-1,performance.now());else a.scanFast(0,performance.now());
   a.draw(performance.now());
   ladStart(a);

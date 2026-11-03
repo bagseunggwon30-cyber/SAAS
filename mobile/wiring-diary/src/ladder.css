@@ -31,3 +31,5 @@
 .lad-chp{fill:none;stroke-width:2.6;stroke-linejoin:round}
 .lad-chp.c0{stroke:#1f5fbf}.lad-chp.c1{stroke:#c2271d}.lad-chp.c2{stroke:#1f9d55}.lad-chp.c3{stroke:#b7791f}
 @media (prefers-reduced-motion: reduce){.lad-flow{animation:none;stroke-dasharray:none;stroke-width:3}.lad-cur{transition:none}}
+.lad-bit{fill:#f1ead3;stroke:#6b6f76;stroke-width:1}
+.lad-bit.on{fill:#e0b81e;stroke:#8a6400}

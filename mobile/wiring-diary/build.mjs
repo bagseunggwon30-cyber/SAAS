@@ -12,6 +12,7 @@ let html = read('original/index.html');
 const css = read('src/ladder.css');
 const sim = read('src/ladder-sim.js');
 const lessons = read('src/lessons-ladder.js');
+const lessonsAdv = read('src/lessons-ladder-adv.js');
 
 function patch(name, from, to) {
   const n = html.split(from).length - 1;
@@ -22,7 +23,7 @@ function patch(name, from, to) {
 // 1) 스타일
 patch('css', '<div id="app">', `<style>\n${css}</style>\n<div id="app">`);
 // 2) 래더 강의 (다른 강의 스크립트 뒤, 엔진 앞)
-patch('lessons', '<script>var rough=', `<script>\n${lessons}\n</script>\n<script>var rough=`);
+patch('lessons', '<script>var rough=', `<script>\n${lessons}\n</script>\n<script>\n${lessonsAdv}\n</script>\n<script>var rough=`);
 // 3) anim 위젯에 ladder 추가
 patch('anim-kind', 'const ANIM_KINDS={', `${sim}\nconst ANIM_KINDS={\n  ladder:LADDER_ANIM,`);
 // 4) 기존 ladder 도형도 눌러 볼 수 있는 래더로 (실패하면 원래 정적 그림으로)
@@ -40,7 +41,7 @@ patch('demovalid', "return rec.ops.every(o=>!o||o.t!=='act'||simResolve(o.id));"
   "return rec.ops.every(o=>!o||o.t!=='act'||simResolve(o.id)||animResolve(o.id));");
 // 8) 과정 목록에 'PLC 래더 입문'
 patch('courses', "{id:'plc',name:'PLC·주차장 실무',short:'PLC'},",
-  "{id:'plc',name:'PLC·주차장 실무',short:'PLC'},{id:'ladder',name:'PLC 래더 입문',short:'래더'},");
+  "{id:'plc',name:'PLC·주차장 실무',short:'PLC'},{id:'ladder',name:'PLC 래더 입문',short:'래더'},{id:'ladder2',name:'PLC 래더 고급',short:'래더+'},");
 
 // 9) 모바일은 도구가 '손(이동)'으로 고정이라 눌러 보는 부품·위젯이 탭에 반응하지 않던 문제:
 //    손 모드에서도 짧게 탭하면 누름, 끌면 화면 이동
