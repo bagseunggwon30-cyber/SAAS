@@ -1,0 +1,33 @@
+/* 래더 시뮬레이터 (ladder-sim.js) — 칠판 종이는 테마와 무관하게 고정 색 */
+.lad-rail{stroke:rgba(31,157,85,.45);stroke-width:6;stroke-linecap:round}
+.lad-glow{fill:none;stroke:rgba(46,184,92,.32);stroke-width:9;stroke-linecap:round;stroke-linejoin:round;opacity:0;transition:opacity .12s}
+.lad-flow{fill:none;stroke:#159447;stroke-width:4.2;stroke-linecap:round;stroke-linejoin:round;stroke-dasharray:2 11;opacity:0;animation:sflow .45s linear infinite}
+.lad-flow.static{animation:none;stroke-dasharray:none;stroke-width:3}
+.lad-glow.on,.lad-flow.on{opacity:1}
+.lad-hl{fill:rgba(46,184,92,0);transition:fill .1s}
+.lad-hl.on{fill:rgba(46,184,92,.55)}
+.lad-coil{fill:rgba(46,184,92,0);transition:fill .12s}
+.lad-coil.on{fill:rgba(46,184,92,.5)}
+.lad-warn{fill:none;stroke:#c2271d;stroke-width:3;stroke-dasharray:5 5;opacity:0}
+.lad-warn.on{opacity:1}
+.lad-box{fill:rgba(46,184,92,0);transition:fill .12s}
+.lad-box.on{fill:rgba(46,184,92,.32)}
+.lad-bar0{fill:rgba(0,0,0,.08);stroke:#4b4f56;stroke-width:1}
+.lad-bar{fill:#2d8fe0}
+.lad-cur{fill:rgba(28,63,148,.07);stroke:none;opacity:0;transition:y .18s ease-out,height .18s,opacity .2s}
+.lad-cur.slow{fill:rgba(255,196,0,.22);stroke:#d79a00;stroke-width:2;stroke-dasharray:6 5}
+.lad-chip{fill:#fbf8ec;stroke:#4b4f56;stroke-width:1.4}
+.lad-chip.on{fill:#ffe39a;stroke:#b7791f}
+.lad-cht{font:600 14px 'IBM Plex Sans KR','Malgun Gothic',system-ui,sans-serif;fill:#23262b;pointer-events:none}
+.lad-ph{font:600 14px 'IBM Plex Sans KR','Malgun Gothic',system-ui,sans-serif;fill:#8a8f96}
+.lad-ph.on{fill:#b45f00}
+.lad-mt{font:500 13px 'IBM Plex Sans KR','Malgun Gothic',system-ui,sans-serif;fill:#6b6f76}
+.lad-mon{fill:#fbf8ec;stroke:#a9a594;stroke-width:1.2}
+.lad-mon.in{stroke:#1f5fbf}.lad-mon.out{stroke:#c2271d}
+.lad-led{fill:#d9d5c6;stroke:#6b6f76;stroke-width:1}
+.lad-led.on{fill:#28d16a;stroke:#137a3b}
+.lad-mtx{font:500 13px 'IBM Plex Mono',ui-monospace,Consolas,monospace;fill:#23262b;pointer-events:none}
+.lad-chax{stroke:rgba(0,0,0,.18);stroke-width:1}
+.lad-chp{fill:none;stroke-width:2.6;stroke-linejoin:round}
+.lad-chp.c0{stroke:#1f5fbf}.lad-chp.c1{stroke:#c2271d}.lad-chp.c2{stroke:#1f9d55}.lad-chp.c3{stroke:#b7791f}
+@media (prefers-reduced-motion: reduce){.lad-flow{animation:none;stroke-dasharray:none;stroke-width:3}.lad-cur{transition:none}}
